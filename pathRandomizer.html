@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Knit Path</title>
+	<script type = "text/javascript" src = "https://cdnjs.cloudflare.com/ajax/libs/d3/4.9.1/d3.js"></script>
+</head>
+<body>
+	<svg id = "pathFinding" width = 550 height = 550>
+		<rect width = 500 height = 500 x = 25 y = 25 fill = "AliceBlue"></rect>
+	</svg>
+	<svg id = "voronoi" width = 550 height = 550>
+		<rect width = 500 height = 500 x = 25 y = 25 fill = "AliceBlue"></rect>
+	</svg>
+	<script type="text/javascript">
+		var pathFind = d3.select("#pathFinding");
+		var vor = d3.select("#voronoi");
+		var voronoi = d3.voronoi();
+
+		var nodes = [];
+		var set = [];
+
+		var size = 10;
+		var step = 50;
+		var max = 50;
+		var min = 0;
+		var padding = 25;
+
+		//generate grid
+		var index = 0;
+		for(var j = 0; j <= size; j++){
+			var row = [];
+			for(var i = 0; i <= size; i++){
+				var nx = (i * step) + padding;
+				var ny = (j * step) + padding;
+				row.push({x: nx, y: ny, index: index, connected: false, next: null, prev: null});
+				set.push({x: nx, y: ny});
+				index++;
+			}
+			nodes.push(row);
+		}
+
+		var voronoi();
+
+		//renders grid onto svg
+		nodes.forEach(function (row) {
+			row.forEach(function (node) {
+				pathFind.append("circle")
+					.attr("cx", node.x)
+					.attr("cy", node.y)
+					.attr("r", 5);
+
+				vor.append("circle")
+					.attr("cx", node.x)
+					.attr("cy", node.y)
+					.attr("r", 5);
+			});
+		});
+
+		//path finding
+		var start = nodes[5][5];
+		connectNodes(start);
+		pathFind.append("circle")
+			.attr("cx", start.x)
+			.attr("cy", start.y)
+			.attr("r", 5)
+			.attr("fill", "red");
+
+		function getNextUnconnected(n) {
+			var i = (n.x - padding)/step;
+			var j = (n.y - padding)/step;
+			var neighbors = [];
+
+			for(var dX = -1; dX <= 1; dX++){
+				for(var dY = -1; dY <= 1; dY++){
+					if((i + dX >= min && i + dX <= max) && (j + dY >= min && j + dY <= max) && (dX != 0 || dY != 0)){
+						if(!nodes[j + dY][i + dX].connected){
+							//checks for possible intersecting edges
+							if(dX * -1 == dY){
+								if(dX > dY){ //(+1, -1)
+									if(nodes[j - 1][i].prev != nodes[j][i + 1].index && nodes[j - 1][i].next != nodes[j][i + 1].index){
+										neighbors.push(nodes[j + dY][i + dX]);
+									}
+								}
+								else{ //check if (i-1, j+1)
+									if(nodes[j + 1][i].prev != nodes[j][i - 1].index && nodes[j + 1][i].next != nodes[j][i - 1].index){
+										neighbors.push(nodes[j + dY][i + dX]);
+									}
+								}
+							}
+							else if(dX == dY){
+								if(dX < 0){
+									if(nodes[j][i - 1].prev != nodes[j - 1][i].index && nodes[j][i - 1].next != nodes[j - 1][i].index){
+										neighbors.push(nodes[j + dY][i + dX]);
+									}
+								}
+								else{
+									if(nodes[j + 1][i].prev != nodes[j][i + 1].index && nodes[j + 1][i].next != nodes[j][i + 1].index){
+										neighbors.push(nodes[j + dY][i + dX]);
+									}
+								}
+							}
+							else{
+								neighbors.push(nodes[j + dY][i + dX]);
+							}
+						}
+					}
+				}
+			}
+
+			if(neighbors.length == 0){
+				console.log("No Neigh")
+				return null;
+			}
+			else{
+				console.log(neighbors);
+				return neighbors;
+			}
+		}
+
+		function connectNodes(current) {
+			current.connected = true;
+			var neighborhood = getNextUnconnected(current);
+			if(neighborhood != null){
+				var num = neighborhood.length;
+				var rand = Math.floor(Math.random() * num);
+				var nextNode = neighborhood[rand];
+				
+				current.next = nextNode.index;
+				nextNode.prev = current.index;
+				
+				pathFind.append("line")
+					.attr("x1", current.x)
+					.attr("y1", current.y)
+					.attr("x2", nextNode.x)
+					.attr("y2", nextNode.y)
+					.attr("stroke-width", 5)
+					.attr("stroke", "black");
+
+				console.log(nextNode);
+				connectNodes(nextNode);
+			}
+			else{
+				pathFind.append("circle")
+					.attr("cx", current.x)
+					.attr("cy", current.y)
+					.attr("r", 5)
+					.attr("fill", "green");
+				return true;
+			}
+		}
+
+
+
+	</script>
+</body>
+</html>

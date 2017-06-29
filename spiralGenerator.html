@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Path Generator 2</title>
+	<script type = "text/javascript" src = "https://cdnjs.cloudflare.com/ajax/libs/d3/4.9.1/d3.js"></script>
+</head>
+<body>
+<svg id = "pathFinding" width = 500 height = 500></svg>
+<script type="text/javascript">
+	var pathFind = d3.select("#pathFinding");
+
+	var width = 300;
+	var size = 5;
+	var step = width/(size-1);
+	var padding = (pathFind.attr("width")-width)/2;
+	var length = step/2;
+	var rect = pathFind.append("rect").attr("width", width).attr("height", width).attr("x", padding).attr("y", padding).attr("fill", "AliceBlue");
+
+	var nodes = [];
+	var set = [];
+
+	//generate grid
+	var index = 0;
+	for(var j = 0; j < size; j++){
+		var row = [];
+		for(var i = 0; i < size; i++){
+			var nx = (i * step) + padding;
+			var ny = (j * step) + padding;
+			var dir1;
+			var dir2;
+			pathFind.append("text").text("(" + i + "," + j + ")").attr("x", nx + 10).attr("y", ny - 10);
+			if(i == Math.floor(size/2)){
+				dir1 = null;
+			}
+			else if(i < size/2){
+				dir1 = "west";
+			}
+			else{
+				dir1 = "east";
+			}
+
+			if(j == Math.floor(size/2)){
+				dir2 == null;
+			}
+			else if(j < size/2){
+				dir2 = "north";
+			}
+			else{
+				dir2 = "south";
+			}
+			row.push({x: nx, y: ny, index: index, connected: false, next: null, prev: null, EW: dir1, NS: dir2});
+			set.push({x: nx, y: ny});
+			index++;
+		}
+		nodes.push(row);
+	}
+	nodes.forEach(function (row) {
+		row.forEach(function (node) {
+			pathFind.append("circle")
+				.attr("cx", node.x)
+				.attr("cy", node.y)
+				.attr("r", 5);
+		});
+	});
+
+	for(var vertLimit = size - 1; vertLimit >= 0; vertLimit--){
+		for(){
+			
+		}
+	}
+
+	var path1 = [];
+	var path2 = [];
+	
+	var regularLoop = {
+		//MAIN LOOP (Entry and Exit through bottom face)
+		spline1: [
+			[-0.5, -0.35, -0.15],
+			[0.35, -0.575, 0.575],
+			[0.25, -0.325, 0.675],
+			[0, 0.4, 0.4],
+			[0.25, 0.425, -0.075],
+			[0.35, 0.225, -0.225],
+			[-0.75, 0.35, -1.1]
+		],
+		//RIGHT CROSS (Entry through right face, Exit through top face)
+		spline2: [
+			[0, -0.5, 0.5],
+			[0.35, -0.08, 0.23],
+			[0.5, 0.35, 0.15]
+		],
+		//LEFT CROSS (Entry through left face, Exit through top face)
+		spline3: [
+			[0, 0.5, -0.5],
+			[0.15, 0.08, 0.27],
+			[0.5, -0.35, 0.85]
+		]
+	}
+
+	var junctionLoop = {
+		//MAIN FRONT LOOP (Entry and Exit through bottom face) 
+		spline1: [
+			[-0.15, 0.2, -0.55],
+			[0.35, 0.225, -0.225],
+			[0.3, 0.375, -0.075],
+			[0.1, 0.3, 0.4],
+			[0.3, -0.375, 0.675],
+			[0.35, -0.575, 0.575],
+			[-0.15, -0.4, 0.05]
+		],
+		//SECOND FRONT LOOP (Entry through left face, Exit through right face)
+		spline2: [
+			[-0.35, 0.6, -0.75],
+			[-0.6, 0.45, -0.35],
+			[0.01, -0.325, 0.575],
+			[0.05, -0.125, 0.675],
+			[-0.05, 0.45, 0.4],
+			[0.05, 0.625, -0.075],
+			[0.01, 0.475, -0.225]
+			[-0.4, 0.05, -0.15],
+			[-0.35, -0.4, 0.25]
+		],
+		//MAIN BACK LOOP (Entry through right face, Exit through bottom face)
+		spline3: [
+			[-1.65, 0.9, 0.25],
+			[-1.35, 1.5, -0.65],
+			[-1.05, 0.8, -0.25],
+			[-0.65, 0.425, 0.575],
+			[-0.75, 0.675, 0.675],
+			[-0.8, 1.2, 0.4],
+			[-0.7, 1.375, -0.075],
+			[-0.65, 0.425, 0.575],
+			[-1.35, 1.3, -0.45]
+		],
+		//RIGHT BOTTOM LOOP (Entry and Exit through top face)
+		spline4: [
+			[-1, 1.3, 0.5],
+			[-0.975, 0.95, 0.375],
+			[0.025, -0.6, 0.925]
+		],
+		//LEFT BOTTOM LOOP (Entry and Exit through top face)
+		spline5: [
+			[-1.125, 1.45, 0.025],
+			[0.025, 0.4, -0.075]
+		],
+		//LEFT BACK LOOP (Entry from left face, Exit through bottom face)
+		spline6: [
+			[-1.65, 1.9, -0.75],
+			[-1.7, 1.45, -0.25]
+		]
+	}
+
+	var junctionCornerLoop = {
+		blank: 1
+	}
+	var dimX = 5;
+	var dimY = 5;
+	var dimZ = 5;
+
+</script>
+</body>
+</html>
