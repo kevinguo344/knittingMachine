@@ -10,46 +10,62 @@
 	var pathFind = d3.select("#pathFinding");
 
 	var width = 300;
-	var size = 5;
-	var step = width/(size-1);
+	var sizeXY = 5;
+	var sizeZ = 5;
+	var step = width/(sizeXY-1);
 	var padding = (pathFind.attr("width")-width)/2;
 	var length = step/2;
 	var rect = pathFind.append("rect").attr("width", width).attr("height", width).attr("x", padding).attr("y", padding).attr("fill", "AliceBlue");
+	var stack = [];
+	var cubeSize = 1;
+
+	var order = [
+		{i:0, j:0, dir: "n", type: "junctionCorner"},
+		{i:1, j:0, dir: "n", type: "normal"},
+		{i:2, j:0, dir: "n", type: "junction"},
+		{i:3, j:0, dir: "n", type: "normal"},
+		{i:4, j:0, dir: "e", type: "junctionCorner"},
+		{i:4, j:1, dir: "e", type: "normal"},
+		{i:4, j:2, dir: "e", type: "junction"},
+		{i:4, j:3, dir: "e", type: "normal"},
+		{i:4, j:4, dir: "s", type: "junctionCorner"},
+		{i:3, j:4, dir: "s", type: "normal"},
+		{i:2, j:4, dir: "s", type: "junction"},
+		{i:1, j:4, dir: "s", type: "normal"},
+		{i:0, j:4, dir: "w", type: "junctionCorner"},
+		{i:0, j:3, dir: "w", type: "normal"},
+		{i:0, j:2, dir: "w", type: "junction"},
+		{i:0, j:1, dir: "n", type: "normal"},
+		{i:1, j:1, dir: "n", connection: [0,0]},
+		{i:2, j:1, dir: "n", connection: [2,0]},
+		{i:3, j:1, dir: "e", connection: [4,0]},
+		{i:3, j:2, dir: "e", connection: [4,2]},
+		{i:3, j:3, dir: "s", connection: [4,4]},
+		{i:2, j:3, dir: "s", connection: [2,4]},
+		{i:1, j:3, dir: "w", connection: [0,4]},
+		{i:1, j:2, dir: "w", connection: [0,2]},
+		{i:2, j:2, dir: null}
+	]
+
+	var revOrder = order.slice(0).reverse();
 
 	var nodes = [];
-	var set = [];
 
 	//generate grid
 	var index = 0;
-	for(var j = 0; j < size; j++){
+	for(var j = 0; j < sizeXY; j++){
 		var row = [];
-		for(var i = 0; i < size; i++){
+		var rowIndicies = [];
+		for(var i = 0; i < sizeXY; i++){
 			var nx = (i * step) + padding;
 			var ny = (j * step) + padding;
 			var dir1;
 			var dir2;
 			pathFind.append("text").text("(" + i + "," + j + ")").attr("x", nx + 10).attr("y", ny - 10);
-			if(i == Math.floor(size/2)){
-				dir1 = null;
-			}
-			else if(i < size/2){
-				dir1 = "west";
-			}
-			else{
-				dir1 = "east";
-			}
-
-			if(j == Math.floor(size/2)){
-				dir2 == null;
-			}
-			else if(j < size/2){
-				dir2 = "north";
-			}
-			else{
-				dir2 = "south";
-			}
-			row.push({x: nx, y: ny, index: index, connected: false, next: null, prev: null, EW: dir1, NS: dir2});
-			set.push({x: nx, y: ny});
+			pathFind.append("rect").attr("x", nx - step/2).attr("y", ny - step/2).attr("width", step).attr("height", step)
+				.attr("fill", "blue").attr("stroke-width", 3).attr("stroke", "red").attr("fill-opacity",0.25);
+			row.push({x: nx, y: ny, index: index, connected: false, next: null, prev: null});
+			rowIndicies.push(index);
 			index++;
 		}
 		nodes.push(row);
@@ -63,14 +79,71 @@
 		});
 	});
 
-	for(var vertLimit = size - 1; vertLimit >= 0; vertLimit--){
-		for(){
-			
+	//stack[z][x][y]
+
+	var stack = [];
+	for(var k = 0; k < sizeZ; k++){
+		var slice = [];
+		for(var i = 0; i < sizeXY; i++){
+			var row = [];
+			for(var j = 0; j < sizeXY; j++){
+				row.push({x: i, y: j, z: k, basis:[], connection: null, splines: null});
+			}
+			slice.push(row);
+		}
+		stack.push(slice);
+	}
+
+	for(var k = 0; k < sizeZ; k++){
+		for(var a = 0; a < order.length; a++){
+			var thisNode;
+			var thisDir;
+			var i,j;
+			var basis = [];
+			if(k%2 == 0){
+				i = order[a].i;
+				j = order[a].j;
+				thisDir = order[a].dir;
+			}
+			else{
+				i = revOrder[a].i;
+				j = revOrder[a].j;
+				thisDir = revOrder[a].dir;
+			}
+			thisNode = stack[k][i][j];
+			if(thisDir == "n"){
+				[]
+			}
+			else if(thisDir == "e"){
+
+			}
+			else if(thisDir == "w"){
+
+			}
+			else if(thisDir == "s"){
+
+			}
+			else{
+
+			}
 		}
 	}
 
-	var path1 = [];
-	var path2 = [];
+	//Based on Ruby function found here:
+	//https://stackoverflow.com/questions/28837273/looping-in-a-spiral-outside-in
+	//Transpose function found here:
+	//https://stackoverflow.com/questions/17428587/transposing-a-2d-array-in-javascript
+	function reverseAnticlockwise(array){
+		var newArray = array[0].map(function(col, i) { 
+	 		return array.map(function(row) {
+	    		return row[i]
+	 		})
+		});
+		var arrRev = newArray.reverse();
+		return arrRev;
+	}
+
+
 	
 	var regularLoop = {
 		//MAIN LOOP (Entry and Exit through bottom face)
@@ -97,6 +170,31 @@
 		]
 	}
 
+	var regularCornerLoop = {
+		//SPLINE 1 MAIN LOOP (Entry and Exit through bottom face)
+		spline1: [
+			[-0.253, 0, -0.747],
+			[0.564, -0.248, 0.034],
+			[0.53, 0.071, -0.001],
+			[0.117, 0.566, 0.117],
+			[-0.001, 0.071, 0.53],
+			[0.034, -0.248, 0.564],
+			[0.747, 0, -0.253]
+		],
+		//SPLINE 2 RIGHT CROSS (Entry through back face, Exit through top face)
+		spline2: [
+			[-0.5, 0.5, 0],
+			[0.335, -0.142, 0.307],
+			[0.747, 0, 0.253]
+		],
+		//SPLINE 3 LEFT CROSS (Entry through left face, Exit through top face)
+		spline3:[
+			[0, 0.5, -0.5],
+			[0.165, 0.142, 0.193],
+			[0.253, 0, 0.747]
+		]
+	}
+
 	var junctionLoop = {
 		//MAIN FRONT LOOP (Entry and Exit through bottom face) 
 		spline1: [
@@ -110,15 +208,15 @@
 		],
 		//SECOND FRONT LOOP (Entry through left face, Exit through right face)
 		spline2: [
-			[-0.35, 0.6, -0.75],
-			[-0.6, 0.45, -0.35],
-			[0.01, -0.325, 0.575],
-			[0.05, -0.125, 0.675],
-			[-0.05, 0.45, 0.4],
-			[0.05, 0.625, -0.075],
-			[0.01, 0.475, -0.225]
-			[-0.4, 0.05, -0.15],
-			[-0.35, -0.4, 0.25]
+			[-0.25, 0.5, -0.75],
+			[-0.7, 0.55, -0.35],
+			[-0.125, -0.025, 0.65],
+			[-0.2, 0.125, 0.675],
+			[-0.3, 0.7, 0.4],
+			[-0.2, 0.825, -0.075],
+			[-0.15, 0.725, -0.225],
+			[-0.45, 0.1, -0.15],
+			[-0.25, -0.5, 0.25]
 		],
 		//MAIN BACK LOOP (Entry through right face, Exit through bottom face)
 		spline3: [
@@ -134,9 +232,9 @@
 		],
 		//RIGHT BOTTOM LOOP (Entry and Exit through top face)
 		spline4: [
-			[-1, 1.3, 0.5],
+			[0.025, 0, 0.325],
 			[-0.975, 0.95, 0.375],
-			[0.025, -0.6, 0.925]
+			[-1, 1.3, 0.5]
 		],
 		//LEFT BOTTOM LOOP (Entry and Exit through top face)
 		spline5: [
@@ -145,18 +243,64 @@
 		],
 		//LEFT BACK LOOP (Entry from left face, Exit through bottom face)
 		spline6: [
-			[-1.65, 1.9, -0.75],
-			[-1.7, 1.45, -0.25]
+			[-1.7, 1.45, -0.25],
+			[-1.65, 1.9, -0.75]
 		]
 	}
 
 	var junctionCornerLoop = {
-		blank: 1
+		//SPLINE 1 MAIN FRONT LOOP (Entry and Exit through bottom face)
+		spline1: [
+			[0.033, -0.142, -0.391],
+			[0.582, -0.248, 0.016],
+			[0.565, 0, 0.035],
+			[0.188, 0.424, 0.188],
+			[0.035, 0, 0.565],
+			[0.016, -0.248, 0.582],
+			[-0.391, -0.142, 0.033]
+		],
+		//SPLINE 2 SECOND FRONT LOOP (Entry through left face, Exit through right face)
+		spline2: [
+			[-0.75, 0.5, -0.25],
+			[-0.427, 0.212, -0.285],
+			[0.405, 0.106, -0.161],
+			[0.388, 0.354, -0.142],
+			[0.082, 0.636, 0.082],
+			[-0.142, 0.354, 0.388],
+			[-0.161, 0.106, 0.405],
+			[-0.427, 0.495, -0.568],
+			[-0.25, 0.5, -0.75]
+		],
+		//SPLINE 3 MAIN BACK LOOP (Entry through right face, Exit through bottom face)
+		spline3: [
+			[-1.75, 2.5, -1.25],
+			[-1.535, 2.57, -1.535],
+			[-0.995, 2.056, -1.561],
+			[-1.066, 1.632, -1.066],
+			[-0.941, 1.667, -0.376],
+			[-0.985, 2.012, -0.427],
+			[-0.699, 2.198, -0.699],
+			[-0.372, 1.894, -0.921],
+			[-0.376, 1.667, -0.941],
+			[-1.136, 2.055, -1.419],
+		],
+		//SPLINE 4 RIGHT BOTTOM LOOP (Entry and Exit through top face)
+		spline4:[
+			[-0.911, 2.48, -0.769],
+			[-1.03, 2.127, -0.747],
+			[-0.108, 0.212, 0.246]
+		],
+		//SPLINE 5 LEFT BOTTOM LOOP (Entry and Exit through top face)
+		spline5:[
+			[-0.888, 2.338, -1.1],
+			[0.246, 0.212, -0.108],
+		],
+		//SPLINE 6 LEFT BACK LOOP (Entry from left face, Exit through bottom face)
+		spline6: [
+			[-1.25, 2.5, -1.75],
+			[-1.535, 2.57, -1.535]
+		]
 	}
-	var dimX = 5;
-	var dimY = 5;
-	var dimZ = 5;
-
 </script>
 </body>
 </html>
