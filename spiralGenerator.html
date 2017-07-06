@@ -3,6 +3,7 @@
 <head>
 	<title>Path Generator 2</title>
 	<script type = "text/javascript" src = "https://cdnjs.cloudflare.com/ajax/libs/d3/4.9.1/d3.js"></script>
+	<script type = "text/javascript" src = "https://cdnjs.cloudflare.com/ajax/libs/mathjs/3.14.1/math.js"></script>
 </head>
 <body>
 <svg id = "pathFinding" width = 500 height = 500></svg>
@@ -35,7 +36,7 @@
 		{i:0, j:4, dir: "w", type: "junctionCorner"},
 		{i:0, j:3, dir: "w", type: "normal"},
 		{i:0, j:2, dir: "w", type: "junction"},
-		{i:0, j:1, dir: "n", type: "normal"},
+		{i:0, j:1, dir: "n", type: "normalCorner"},
 		{i:1, j:1, dir: "n", connection: [0,0]},
 		{i:2, j:1, dir: "n", connection: [2,0]},
 		{i:3, j:1, dir: "e", connection: [4,0]},
@@ -47,38 +48,174 @@
 		{i:2, j:2, dir: null}
 	]
 
+	var regularLoop = {
+		//2 -> 1 -> 3
+		//MAIN LOOP (Entry and Exit through bottom face)
+		spline1: [
+			[-0.35, 0, -0.5],
+			[-0.4, -0.175, 0.175],
+			[-0.375, 0.05, 0.3],
+			[0, 0.4, 0.4],
+			[0.375, 0.05, 0.3],
+			[0.4, -0.175, 0.175],
+			[0.35, 0, -0.5]
+		],
+		//RIGHT CROSS (Entry through right face, Exit through top face)
+		spline2: [
+			[0.5, 0, 0],
+			[-0.02, -0.1, 0.25],
+			[-0.35, 0, 0.5]
+		],
+		//LEFT CROSS (Entry through left face, Exit through top face)
+		spline3: [
+			[0.35, 0, 0.5],
+			[0.02, 0.1, 0.25],
+			[-0.5, 0, 0],
+		]
+	}
+
+	var regularCornerLoop = {
+		//2 -> 1 -> 3
+		//SPLINE 1 MAIN LOOP (Entry and Exit through bottom face)
+		spline1: [
+			[-0.247, -0.247, -0.5],
+			[-0.141, -0.389, 0.175],
+			[-0.301, -0.23, 0.3],
+			[-0.283, 0.283, 0.4],
+			[0.23, 0.301, 0.3],
+			[0.389, 0.141, 0.175],
+			[0.247, 0.247, -0.5],
+		],
+		//SPLINE 2 RIGHT CROSS (Entry through back face, Exit through top face)
+		spline2: [
+			[0, 0.5, 0],
+			[0.057, -0.085, 0.25],
+			[-0.247, -0.247, 0.5],
+		],
+		//SPLINE 3 LEFT CROSS (Entry through left face, Exit through top face)
+		spline3:[
+			[0.247, 0.247, 0.5],
+			[-0.057, 0.085, 0.25],
+			[-0.5, 0, 0],
+		]
+	}
+
+	var junctionLoop = {
+		//FIRST PASS: 2 (separate)
+		//SECOND PASS: 3, 5 (cube below), 1, 4 (cube below), 6
+		
+		//MAIN FRONT LOOP (Entry and Exit through bottom face) 
+		spline1: [
+			[-0.3, -0.1, -0.25],
+			[-0.4, -0.175, 0.175],
+			[-0.375, 0, 0.3],
+			[0, 0.3, 0.4],
+			[0.375, 0, 0.3],
+			[0.4, -0.175, 0.175],
+			[0.3, -0.1, -0.25],
+		],
+		//SECOND FRONT LOOP (Entry through left face, Exit through right face)
+		spline2: [
+			[-0.5, 0, -0.25],
+			[-0.1, 0.45, -0.25],
+			[0.4, 0.375, 0.175],
+			[0.375, 0.5, 0.3],
+			[0, 0.7, 0.4],
+			[-0.375, 0.5, 0.3],
+			[-0.4, 0.325, 0.175],
+			[0.1, 0.2, -0.25],
+			[0.5, 0, -0.25],
+		],
+		//MAIN BACK LOOP (Entry through right face, Exit through bottom face)
+		spline3: [
+			[0.5, 1.4, -0.25],
+			[-0.4, 1.1, -0.25],
+			[0, 0.8, -0.25],
+			[0.4, 0.825, 0.175],
+			[0.375, 1.05, 0.3],
+			[0, 1.2, 0.4],
+			[-0.375, 1, 0.3],
+			[0.4, 0.825, 0.175],
+			[-0.2, 1.1, -0.25],
+		],
+		//RIGHT BOTTOM LOOP (Entry and Exit through top face)
+		spline4: [
+			[0.15, 0.15, 0.175],
+			[0.2, 1.15, 0.175],
+			[0.1, 1.4, 0.4],
+		],
+		//LEFT BOTTOM LOOP (Entry and Exit through top face)
+		spline5: [
+			[-0.15, 1.3, 0.175],
+			[-0.15, 0.15, 0.175],
+		],
+		//LEFT BACK LOOP (Entry from left face, Exit through bottom face)
+		spline6: [
+			[0, 1.45, -0.25],
+			[-0.5, 1.4, -0.25],
+		]
+	}
+
+	var junctionCornerLoop = {
+		//FIRST PASS: 2 (separate)
+		//SECOND PASS: 3, 5 (cube below), 1, 4 (cube below), 6
+
+		//SPLINE 1 MAIN FRONT LOOP (Entry and Exit through bottom face)
+		spline1: [
+			[-0.141, -0.283, -0.25],
+			[-0.159, -0.407, 0.175],
+			[-0.265, -0.265, 0.3],
+			[-0.212, 0.212, 0.4],
+			[0.265, 0.265, 0.3],
+			[0.407, 0.159, 0.175],
+			[0.283, 0.141, -0.25],
+		],
+		//SPLINE 2 SECOND FRONT LOOP (Entry through left face, Exit through right face)
+		spline2: [
+			[0, 0.5, -0.25],
+			[-0.035, 0.177, -0.25],
+			[-0.336, -0.23, 0.175],
+			[-0.442, -0.088, 0.3],
+			[-0.318, 0.318, 0.4],
+			[0.088, 0.442, 0.3],
+			[0.23, 0.336, 0.175],
+			[-0.318, 0.177, -0.25],
+			[-0.5, 0, -0.25],
+		],
+		//SPLINE 3 MAIN BACK LOOP (Entry through right face, Exit through bottom face)
+		spline3: [
+			[-1, 1.5, -0.25],
+			[-1.285, 1.285, -0.25],
+			[-1.311, 0.745, -0.25],
+			[-0.816, 0.816, -0.25],
+			[-0.551, 1.116, 0.175],
+			[-0.727, 1.285, 0.3],
+			[-1.099, 1.099, 0.4],
+			[-1.222, 0.672, 0.3],
+			[-1.116, 0.551, 0.175],
+			[-1.169, 0.886, -0.25],
+		],
+		//SPLINE 4 RIGHT BOTTOM LOOP (Entry and Exit through top face)
+		spline4: [
+			[-1.169, 1.311, 0.4],
+			[-0.922, 1.205, 0.175],
+			[0.071, 0.283, 0.175],
+		],
+		//SPLINE 5 LEFT BOTTOM LOOP (Entry and Exit through top face)
+		spline5: [
+			[-1.275, 1.063, 0.175],
+			[-0.283, -0.071, 0.175],
+		],
+		//SPLINE 6 LEFT BACK LOOP (Entry from left face, Exit through bottom face)
+		spline6: [
+			[-1.5, 1, -0.25],
+			[-1.285, 1.285, -0.25],
+		]
+	}
+
 	var revOrder = order.slice(0).reverse();
 
 	var nodes = [];
-
-	//generate grid
-	var index = 0;
-	for(var j = 0; j < sizeXY; j++){
-		var row = [];
-		var rowIndicies = [];
-		for(var i = 0; i < sizeXY; i++){
-			var nx = (i * step) + padding;
-			var ny = (j * step) + padding;
-			var dir1;
-			var dir2;
-			pathFind.append("text").text("(" + i + "," + j + ")").attr("x", nx + 10).attr("y", ny - 10);
-			pathFind.append("rect").attr("x", nx - step/2).attr("y", ny - step/2).attr("width", step).attr("height", step)
-				.attr("fill", "blue").attr("stroke-width", 3).attr("stroke", "red").attr("fill-opacity",0.25);
-			row.push({x: nx, y: ny, index: index, connected: false, next: null, prev: null});
-			rowIndicies.push(index);
-			index++;
-		}
-		nodes.push(row);
-	}
-	nodes.forEach(function (row) {
-		row.forEach(function (node) {
-			pathFind.append("circle")
-				.attr("cx", node.x)
-				.attr("cy", node.y)
-				.attr("r", 5);
-		});
-	});
-
 	//stack[z][x][y]
 
 	var stack = [];
@@ -87,7 +224,11 @@
 		for(var i = 0; i < sizeXY; i++){
 			var row = [];
 			for(var j = 0; j < sizeXY; j++){
-				row.push({x: i, y: j, z: k, basis:[], connection: null, splines: null});
+				var above;
+				if(k < sizeZ - 1){above = [i,j,k+1]}
+				var below;
+				if(k > 0){below = [i,j,k-1]}
+				row.push({x: i, y: j, z: k, transform: [], above: above, below: below});
 			}
 			slice.push(row);
 		}
@@ -98,209 +239,253 @@
 		for(var a = 0; a < order.length; a++){
 			var thisNode;
 			var thisDir;
-			var i,j;
-			var basis = [];
-			if(k%2 == 0){
-				i = order[a].i;
-				j = order[a].j;
-				thisDir = order[a].dir;
-			}
-			else{
-				i = revOrder[a].i;
-				j = revOrder[a].j;
-				thisDir = revOrder[a].dir;
-			}
-			thisNode = stack[k][i][j];
+			var transform;
+			
+			var i = order[a].i;
+			var j = order[a].j;
+
+			thisDir = order[a].dir;
+
+			//transform MIGHT BE WRONG FIX THIS
 			if(thisDir == "n"){
-				[]
+				transform = math.matrix([
+					//90 degree rotation
+					[0, -1, 0, i],
+					[1, 0, 0, j],
+					[0, 0, 1, k],
+					[0, 0, 0, 1]
+				]);
 			}
 			else if(thisDir == "e"){
-
+				transform = math.matrix([
+					//180 degree rotation
+					[-1, 0, 0, i],
+					[0, -1, 0, j],
+					[0, 0, 1, k],
+					[0, 0, 0, 1]
+				]);
 			}
 			else if(thisDir == "w"){
-
+				transform = math.matrix([
+					//270 degree rotation
+					[0, 1, 0, i],
+					[-1, 0, 0, j],
+					[0, 0, 1, k],
+					[0, 0, 0, 1]
+				]);
 			}
 			else if(thisDir == "s"){
-
+				transform = math.matrix([
+					//0 degree rotation
+					[1, 0, 0, i],
+					[0, 1, 0, j],
+					[0, 0, 1, k],
+					[0, 0, 0, 1]
+				]);
 			}
 			else{
+				transform = math.matrix([
+					[1, 0, 0, 0],
+					[0, 1, 0, 0],
+					[0, 0, 1, 0],
+					[0, 0, 0, 1]
+				]);
+			}
 
+			stack[k][i][j].transform = transform;
+
+			if(order[a].connection != null){
+				stack[k][i][j].connection = [order[a].connection[0], order[a].connection[1], k];
+			}
+			if(order[a].type != null){
+				if(order[a].type == "normal"){
+					stack[k][i][j].splines = {
+						spline1: matMultiply(transform, regularLoop.spline1),
+						spline2: matMultiply(transform, regularLoop.spline2),
+						spline3: matMultiply(transform, regularLoop.spline3)
+					};
+				}
+				else if(order[a].type == "normalCorner"){
+					stack[k][i][j].splines = {
+						spline1: matMultiply(transform, regularCornerLoop.spline1),
+						spline2: matMultiply(transform, regularCornerLoop.spline2),
+						spline3: matMultiply(transform, regularCornerLoop.spline3)
+					};
+				}
+				else if(order[a].type == "junction"){
+					stack[k][i][j].splines = {
+						spline1: matMultiply(transform, junctionLoop.spline1),
+						spline2: matMultiply(transform, junctionLoop.spline2),
+						spline3: matMultiply(transform, junctionLoop.spline3),
+						spline4: matMultiply(transform, junctionLoop.spline4),
+						spline5: matMultiply(transform, junctionLoop.spline5),
+						spline6: matMultiply(transform, junctionLoop.spline6)
+					}
+				}
+				else if(order[a].type == "junctionCorner"){
+					stack[k][i][j].splines = {
+						spline1: matMultiply(transform, junctionCornerLoop.spline1),
+						spline2: matMultiply(transform, junctionCornerLoop.spline2),
+						spline3: matMultiply(transform, junctionCornerLoop.spline3),
+						spline4: matMultiply(transform, junctionCornerLoop.spline4),
+						spline5: matMultiply(transform, junctionCornerLoop.spline5),
+						spline6: matMultiply(transform, junctionCornerLoop.spline6)
+					}
+				}
+			}
+			stack[k][i][j].transform = transform;
+		}
+	}
+	console.log("Finished setting splines");
+	var path = [];
+	var csv = "";
+
+	console.log("started building path");
+
+	for(var z = 0; z < stack.length; z++){
+		var o;
+		if(z % 2 == 0){
+			o = order;
+			//right to left (for even)
+			for(var i = 0; i < o.length; i++){
+				if(o[i].type != null){
+					var thisSpline = stack[z][o[i].i][o[i].j];
+					if(o[i].type == "normal" || o[i].type == "normalCorner"){
+						for(var ind = 0; ind < thisSpline.splines.spline2.length; ind++){
+							path.push(thisSpline.splines.spline2[ind]);
+						}
+						if(z < stack.length - 1){
+							//2 -> 1 -> 3
+							for(var ind = 0; ind < thisSpline.splines.spline1.length; ind++){
+								path.push(stack[z + 1][o[i].i][o[i].j].splines.spline1[ind]);
+							}
+						}
+						else{
+							var loop1 = thisSpline.splines.spline1.slice(0);
+							for(var a = 0; a < thisSpline.splines.spline1.length; a++){
+								loop1[a][2] = loop1[a][2]+1;
+								path.push(loop1[a]);
+							}
+						}
+						for(var ind = 0; ind < thisSpline.splines.spline2.length; ind++){
+							path.push(thisSpline.splines.spline3[ind]);
+						}
+					}
+					else if (o[i].type == "junction" || o[i].type == "junctionCorner"){
+						for(var ind = 0; ind < thisSpline.splines.spline2.length; ind++){
+							path.push(thisSpline.splines.spline2[ind]);
+						}
+					}
+					else{
+						path.push([o[i].i, o[i].j, z]);
+					}
+					if(o[i].connection != null){
+						var connect = stack[z][o[i].connection[0]][o[i].connection[1]];
+						console.log(connect);
+						//SECOND PASS: 3, 5 (cube below), 1, 4 (cube below), 6
+						if(connect.below != null){
+							var connectBelow = stack[connect.below[2]][connect.below[0]][connect.below[1]];
+							for(var ind = 0; ind < connect.splines.spline3.length; ind++){
+								path.push(connect.splines.spline3[ind]);
+							}
+							for(var ind = 0; ind < connectBelow.splines.spline5.length; ind++){
+								path.push(connectBelow.splines.spline5[ind]);
+							}
+							for(var ind = 0; ind < connect.splines.spline1.length; ind++){
+								path.push(connect.splines.spline1[ind]);
+							}
+							for(var ind = 0; ind < connectBelow.splines.spline4.length; ind++){
+								path.push(connectBelow.splines.spline4[ind]);
+							}
+							for(var ind = 0; ind < connect.splines.spline6.length; ind++){
+								path.push(connect.splines.spline6[ind]);
+							}
+						}
+					}
+				}
+			}
+		}
+		else{
+			o = revOrder;
+			//left to right
+			for(var i = 0; i < o.length; i++){
+				if(o[i].type != null){
+					var thisSpline = stack[z][o[i].i][o[i].j];
+					if(o[i].type == "normal" || o[i].type == "normalCorner"){
+						//3 -> 1 -> 2 (all reversed)
+						for(var ind = thisSpline.splines.spline3.length - 1; ind >= 0; ind--){
+							path.push(thisSpline.splines.spline3[ind]);
+						}
+						if(thisSpline.above != null){
+							for(var ind = thisSpline.splines.spline1.length - 1; ind >= 0; ind--){
+								path.push(stack[z + 1][o[i].i][o[i].j].splines.spline1[ind]);
+							}
+						}
+						else{
+							var loop1 = thisSpline.splines.spline1.slice(0);
+							for(var ind = thisSpline.splines.spline1.length - 1; ind >= 0; ind--){
+								loop1[a][2] = loop1[a][2]+1;
+								path.push(loop1[a]);
+							}
+						}
+						for(var ind = thisSpline.splines.spline2.length - 1; ind >= 0; ind--){
+							path.push(thisSpline.splines.spline2[ind]);
+						}
+					}
+					else if (o[i].type == "junction" || o[i].type == "junctionCorner"){
+						for(var ind = thisSpline.splines.spline2.length - 1; ind >= 0; ind--){
+							path.push(thisSpline.splines.spline2[ind]);
+						}
+					}
+					else{
+						path.push([o[i].i, o[i].j, z]);
+					}
+					if(o[i].connection != null){
+						var connect = stack[z][o[i].connection[0]][o[i].connection[1]];
+						console.log(connect);
+						//SECOND PASS: 6 -> 4 (cube below) -> 1 -> 5 (cube below) -> 3 (all reversed)
+						if(connect.below != null){
+							var connectBelow = stack[connect.below[2]][connect.below[0]][connect.below[1]];
+							for(var ind = connect.splines.spline6.length - 1; ind >= 0; ind--){
+								path.push(connect.splines.spline6[ind]);
+							}
+							for(var ind = connectBelow.splines.spline4.length - 1; ind >= 0; ind--){
+								path.push(connectBelow.splines.spline4[ind]);
+							}
+							for(var ind = connect.splines.spline1.length - 1; ind >= 0; ind--){
+								path.push(connect.splines.spline1[ind]);
+							}
+							for(var ind = connectBelow.splines.spline5.length - 1; ind >= 0; ind--){
+								path.push(connectBelow.splines.spline5[ind]);
+							}
+							for(var ind = connect.splines.spline3.length - 1; ind >= 0; ind--){
+								path.push(connect.splines.spline3[ind]);
+							}
+						}
+					}
+				}
 			}
 		}
 	}
 
-	//Based on Ruby function found here:
-	//https://stackoverflow.com/questions/28837273/looping-in-a-spiral-outside-in
-	//Transpose function found here:
-	//https://stackoverflow.com/questions/17428587/transposing-a-2d-array-in-javascript
-	function reverseAnticlockwise(array){
-		var newArray = array[0].map(function(col, i) { 
-	 		return array.map(function(row) {
-	    		return row[i]
-	 		})
-		});
-		var arrRev = newArray.reverse();
-		return arrRev;
+	for(var a = 0; a < path.length; a++){
+		for(var b = 0; b < 3; b++){
+			csv += (path[a][b] + ",");
+		}
+		csv += "\n";
 	}
 
-
+	function matMultiply(trans, arr) {
+		var resultingArray = [];
+		for(var y = 0; y < arr.length; y++){
+			var point = math.transpose([arr[y][0], arr[y][1], arr[y][2], 1]);
+			var result = math.multiply(trans, point);
+			result._data.splice(3,1)
+			resultingArray.push(result._data);
+		}
+		return resultingArray;
+	}
 	
-	var regularLoop = {
-		//MAIN LOOP (Entry and Exit through bottom face)
-		spline1: [
-			[-0.5, -0.35, -0.15],
-			[0.35, -0.575, 0.575],
-			[0.25, -0.325, 0.675],
-			[0, 0.4, 0.4],
-			[0.25, 0.425, -0.075],
-			[0.35, 0.225, -0.225],
-			[-0.75, 0.35, -1.1]
-		],
-		//RIGHT CROSS (Entry through right face, Exit through top face)
-		spline2: [
-			[0, -0.5, 0.5],
-			[0.35, -0.08, 0.23],
-			[0.5, 0.35, 0.15]
-		],
-		//LEFT CROSS (Entry through left face, Exit through top face)
-		spline3: [
-			[0, 0.5, -0.5],
-			[0.15, 0.08, 0.27],
-			[0.5, -0.35, 0.85]
-		]
-	}
-
-	var regularCornerLoop = {
-		//SPLINE 1 MAIN LOOP (Entry and Exit through bottom face)
-		spline1: [
-			[-0.253, 0, -0.747],
-			[0.564, -0.248, 0.034],
-			[0.53, 0.071, -0.001],
-			[0.117, 0.566, 0.117],
-			[-0.001, 0.071, 0.53],
-			[0.034, -0.248, 0.564],
-			[0.747, 0, -0.253]
-		],
-		//SPLINE 2 RIGHT CROSS (Entry through back face, Exit through top face)
-		spline2: [
-			[-0.5, 0.5, 0],
-			[0.335, -0.142, 0.307],
-			[0.747, 0, 0.253]
-		],
-		//SPLINE 3 LEFT CROSS (Entry through left face, Exit through top face)
-		spline3:[
-			[0, 0.5, -0.5],
-			[0.165, 0.142, 0.193],
-			[0.253, 0, 0.747]
-		]
-	}
-
-	var junctionLoop = {
-		//MAIN FRONT LOOP (Entry and Exit through bottom face) 
-		spline1: [
-			[-0.15, 0.2, -0.55],
-			[0.35, 0.225, -0.225],
-			[0.3, 0.375, -0.075],
-			[0.1, 0.3, 0.4],
-			[0.3, -0.375, 0.675],
-			[0.35, -0.575, 0.575],
-			[-0.15, -0.4, 0.05]
-		],
-		//SECOND FRONT LOOP (Entry through left face, Exit through right face)
-		spline2: [
-			[-0.25, 0.5, -0.75],
-			[-0.7, 0.55, -0.35],
-			[-0.125, -0.025, 0.65],
-			[-0.2, 0.125, 0.675],
-			[-0.3, 0.7, 0.4],
-			[-0.2, 0.825, -0.075],
-			[-0.15, 0.725, -0.225],
-			[-0.45, 0.1, -0.15],
-			[-0.25, -0.5, 0.25]
-		],
-		//MAIN BACK LOOP (Entry through right face, Exit through bottom face)
-		spline3: [
-			[-1.65, 0.9, 0.25],
-			[-1.35, 1.5, -0.65],
-			[-1.05, 0.8, -0.25],
-			[-0.65, 0.425, 0.575],
-			[-0.75, 0.675, 0.675],
-			[-0.8, 1.2, 0.4],
-			[-0.7, 1.375, -0.075],
-			[-0.65, 0.425, 0.575],
-			[-1.35, 1.3, -0.45]
-		],
-		//RIGHT BOTTOM LOOP (Entry and Exit through top face)
-		spline4: [
-			[0.025, 0, 0.325],
-			[-0.975, 0.95, 0.375],
-			[-1, 1.3, 0.5]
-		],
-		//LEFT BOTTOM LOOP (Entry and Exit through top face)
-		spline5: [
-			[-1.125, 1.45, 0.025],
-			[0.025, 0.4, -0.075]
-		],
-		//LEFT BACK LOOP (Entry from left face, Exit through bottom face)
-		spline6: [
-			[-1.7, 1.45, -0.25],
-			[-1.65, 1.9, -0.75]
-		]
-	}
-
-	var junctionCornerLoop = {
-		//SPLINE 1 MAIN FRONT LOOP (Entry and Exit through bottom face)
-		spline1: [
-			[0.033, -0.142, -0.391],
-			[0.582, -0.248, 0.016],
-			[0.565, 0, 0.035],
-			[0.188, 0.424, 0.188],
-			[0.035, 0, 0.565],
-			[0.016, -0.248, 0.582],
-			[-0.391, -0.142, 0.033]
-		],
-		//SPLINE 2 SECOND FRONT LOOP (Entry through left face, Exit through right face)
-		spline2: [
-			[-0.75, 0.5, -0.25],
-			[-0.427, 0.212, -0.285],
-			[0.405, 0.106, -0.161],
-			[0.388, 0.354, -0.142],
-			[0.082, 0.636, 0.082],
-			[-0.142, 0.354, 0.388],
-			[-0.161, 0.106, 0.405],
-			[-0.427, 0.495, -0.568],
-			[-0.25, 0.5, -0.75]
-		],
-		//SPLINE 3 MAIN BACK LOOP (Entry through right face, Exit through bottom face)
-		spline3: [
-			[-1.75, 2.5, -1.25],
-			[-1.535, 2.57, -1.535],
-			[-0.995, 2.056, -1.561],
-			[-1.066, 1.632, -1.066],
-			[-0.941, 1.667, -0.376],
-			[-0.985, 2.012, -0.427],
-			[-0.699, 2.198, -0.699],
-			[-0.372, 1.894, -0.921],
-			[-0.376, 1.667, -0.941],
-			[-1.136, 2.055, -1.419],
-		],
-		//SPLINE 4 RIGHT BOTTOM LOOP (Entry and Exit through top face)
-		spline4:[
-			[-0.911, 2.48, -0.769],
-			[-1.03, 2.127, -0.747],
-			[-0.108, 0.212, 0.246]
-		],
-		//SPLINE 5 LEFT BOTTOM LOOP (Entry and Exit through top face)
-		spline5:[
-			[-0.888, 2.338, -1.1],
-			[0.246, 0.212, -0.108],
-		],
-		//SPLINE 6 LEFT BACK LOOP (Entry from left face, Exit through bottom face)
-		spline6: [
-			[-1.25, 2.5, -1.75],
-			[-1.535, 2.57, -1.535]
-		]
-	}
 </script>
 </body>
 </html>
