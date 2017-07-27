@@ -17,6 +17,10 @@
 	var legSizeZ = 5;
 	var bodSizeZ = 8;
 	var headSizeZ = 5;
+
+	var totalSizeZ = (legSizeZ * 2) + bodSizeZ + headSizeZ;
+	var legLimit = legSizeZ * 2 + bodSizeZ;
+
 	//var padding = (pathFind.attr("width")-width)/2;
 	//var rect = pathFind.append("rect").attr("width", width).attr("height", width).attr("x", padding).attr("y", padding).attr("fill", "AliceBlue");
 	var stack = [];
@@ -398,7 +402,41 @@
 	//stack[z][x][y]
 
 	var stack = [];
-	for(var k = 0; k < legSizeZ; k++){
+
+	var sliceOrder = [];
+
+	for(var k = 0; k < totalSizeZ; k++){
+		if(k < legSizeZ || (k < (legSizeZ + 2 * bodSizeZ) && k >= bodSizeZ)){
+			if(k%2 == 0){
+				sliceOrder.push(legOrder);
+				console.log(k + ": Forward Leg");
+			}
+			else{
+				sliceOrder.push(revlegOrder);
+				console.log(k + ": Reverse Leg");
+			}
+		}
+		else if(k >= legSizeZ && k < (legSizeZ + bodSizeZ)){
+			if(k%2 == 0){
+				sliceOrder.push(bodOrder);
+				console.log(k + ": Forward Body");
+			}
+			else{
+				sliceOrder.push(revbodOrder);
+				console.log(k + ": Reverse Body");
+			}
+		}
+		else{
+			if(k%2 == 0){
+				sliceOrder.push(headOrder);
+				console.log(k + ": Forward Head");
+			}
+			else{
+				sliceOrder.push(revheadOrder);
+				console.log(k + ": Reverse Head");
+			}
+		}
+
 		var slice = [];
 		for(var i = 0; i < sizeX; i++){
 			var row = [];
@@ -424,28 +462,29 @@
 		stack.push(slice);
 	}
 
-	for(var k = 0; k < legSizeZ; k++){
-		for(var a = 0; a < legOrder.length; a++){
+	for(var k = 0; k < totalSizeZ; k++){
+		var thisSlice = sliceOrder[k];
+		for(var a = 0; a < thisSlice.length; a++){
 			var thisNode;
 			var thisDir;
 			var transform;
 			var cTransform;
-			var i = legOrder[a].i;
-			var j = legOrder[a].j;
+			var i = thisSlice[a].i;
+			var j = thisSlice[a].j;
 
 			var cI;
 			var cJ;
 
-			if(legOrder[a].connection != null){
-				cI = legOrder[a].connection[0];
-				cJ = legOrder[a].connection[1];
+			if(thisSlice[a].connection != null){
+				cI = thisSlice[a].connection[0];
+				cJ = thisSlice[a].connection[1];
 			}
 			else{
 				cI = 0;
 				cJ = 0;
 			}
 
-			thisDir = legOrder[a].dir;
+			thisDir = thisSlice[a].dir;
 
 			//transform MIGHT BE WRONG FIX THIS
 			if(thisDir == "n"){
@@ -524,22 +563,22 @@
 
 			stack[k][i][j].transform = transform;
 
-			if(legOrder[a].type != null && (k < legSizeZ-1 || (k == legSizeZ-1 && legOrder[a].castOff == null))){
-				if(legOrder[a].type == "normal"){
+			if(thisSlice[a].type != null && (thisSlice[a].castOff == null || k != legSizeZ-1 || k != (2*legSizeZ+bodSizeZ-1) || k != totalSizeZ-1)){
+				if(thisSlice[a].type == "normal"){
 					stack[k][i][j].splines = {
 						spline1a: matMultiply(transform, regularLoop.spline1a),
 						spline1b: matMultiply(transform, regularLoop.spline1b),
 						spline1c: matMultiply(transform, regularLoop.spline1c),
 					};
 				}
-				else if(legOrder[a].type == "normalCorner"){
+				else if(thisSlice[a].type == "normalCorner"){
 					stack[k][i][j].splines = {
 						spline1a: matMultiply(transform, regularCornerLoop.spline1a),
 						spline1b: matMultiply(transform, regularCornerLoop.spline1b),
 						spline1c: matMultiply(transform, regularCornerLoop.spline1c)
 					};
 				}
-				else if(legOrder[a].type == "junction"){
+				else if(thisSlice[a].type == "junction"){
 					stack[k][i][j].splines = {
 						spline1a: matMultiply(transform, junctionLoop.spline1a),
 						spline1b: matMultiply(transform, junctionLoop.spline1b),
@@ -549,7 +588,7 @@
 						spline2: matMultiply(transform, junctionLoop.spline2),
 					}
 				}
-				else if(legOrder[a].type == "junctionCorner"){
+				else if(thisSlice[a].type == "junctionCorner"){
 					stack[k][i][j].splines = {
 						spline1a: matMultiply(transform, junctionCornerLoop.spline1a),
 						spline1b: matMultiply(transform, junctionCornerLoop.spline1b),
@@ -560,22 +599,22 @@
 					}
 				}
 			}
-			else if(legOrder[a].type != null && k == legSizeZ-1 && legOrder[a].castOff){
-				if(legOrder[a].type == "normal"){
+			else if(thisSlice[a].type != null && (k == legSizeZ-1 || k == (2*legSizeZ+bodSizeZ-1) || k == totalSizeZ-1) && thisSlice[a].castOff){
+				if(thisSlice[a].type == "normal"){
 					stack[k][i][j].splines = {
 						spline1a: matMultiply(transform, regularLoop.spline1a),
 						spline1b: matMultiply(transform, castOffRightMain.spline1),
 						spline1c: matMultiply(transform, regularLoop.spline1c),
 					};
 				}
-				else if(legOrder[a].type == "normalCorner"){
+				else if(thisSlice[a].type == "normalCorner"){
 					stack[k][i][j].splines = {
 						spline1a: matMultiply(transform, regularCornerLoop.spline1a),
 						spline1b: matMultiply(transform, castOffCornerMain.spline1),
 						spline1c: matMultiply(transform, regularCornerLoop.spline1c)
 					};
 				}
-				else if(legOrder[a].type == "junction"){
+				else if(thisSlice[a].type == "junction"){
 					stack[k][i][j].splines = {
 						spline1a: matMultiply(transform, junctionLoop.spline1a),
 						spline1b: matMultiply(transform, castOffRightMain.spline1),
@@ -585,7 +624,7 @@
 						spline2: matMultiply(transform, castOffRightSecondary.spline1),
 					}
 				}
-				else if(legOrder[a].type == "junctionCorner"){
+				else if(thisSlice[a].type == "junctionCorner"){
 					stack[k][i][j].splines = {
 						spline1a: matMultiply(transform, junctionCornerLoop.spline1a),
 						spline1b: matMultiply(transform, castOffCornerMain.spline1),
@@ -596,10 +635,10 @@
 					}
 				}
 			}
-			else if (legOrder[a].connection != null){
-				stack[k][i][j].connection = [legOrder[a].connection[0], legOrder[a].connection[1], k];
+			else if (thisSlice[a].connection != null){
+				stack[k][i][j].connection = [thisSlice[a].connection[0], thisSlice[a].connection[1], k];
 			}
-			else if(legOrder[a].type == null && k == legSizeZ-1){
+			else if(thisSlice[a].type == null && k == thisSlice-1){
 				stack[k][i][j].splines = {
 					spline1: matMultiply(transform, regularLoop.spline1b)
 				}
@@ -618,7 +657,7 @@
 	for(var z = 0; z < stack.length; z++){
 		var o;
 		if(z % 2 == 0){
-			o = legOrder;
+			o = sliceOrder[z];
 			//right to left (for even)
 			for(var i = 0; i < o.length; i++){
 				var thisSpline = stack[z][o[i].i][o[i].j];
@@ -654,7 +693,7 @@
 			}
 		}
 		else{
-			o = revlegOrder;
+			o = sliceOrder[z];
 			//left to right
 			for(var i = 0; i < o.length; i++){
 				var thisSpline = stack[z][o[i].i][o[i].j];
@@ -738,7 +777,7 @@
 	}
 	bcc.push(curve1);
 	var blob = new Blob(bcc);
-	//saveAs(blob, "bear.bcc");
+	saveAs(blob, "bear.bcc");
 
 	function travelSplineForward(spline, pathArr, pointArr) {
 		for(var a = 0; a < spline.length; a++){
