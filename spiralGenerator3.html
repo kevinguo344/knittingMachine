@@ -13,7 +13,7 @@
 
 	var width = 300;
 	var sizeXY = 5;
-	var sizeZ = 3;
+	var sizeZ = 2;
 	var step = width/(sizeXY-1);
 	var padding = (pathFind.attr("width")-width)/2;
 	var length = step/2;
@@ -442,7 +442,7 @@
 						spline1a: matMultiply(transform, junctionLoop.spline1a),
 						spline1b: matMultiply(transform, castOffRightMain.spline1),
 						spline1c: matMultiply(transform, junctionLoop.spline1c),
-						spline1d: matMultiply(cTransform, castOffRightMain.spline1),
+						spline1d: matMultiply(cTransform, castOffRightMain.spline1.slice(0).reverse()),
 						spline1e: matMultiply(transform, junctionLoop.spline1e),
 						spline2: matMultiply(transform, castOffRightSecondary.spline1),
 					}
@@ -452,7 +452,7 @@
 						spline1a: matMultiply(transform, junctionCornerLoop.spline1a),
 						spline1b: matMultiply(transform, castOffCornerMain.spline1),
 						spline1c: matMultiply(transform, junctionCornerLoop.spline1c),
-						spline1d: matMultiply(cTransform, castOffCornerMain.spline1),
+						spline1d: matMultiply(cTransform, castOffCornerMain.spline1.slice(0).reverse()),
 						spline1e: matMultiply(transform, junctionCornerLoop.spline1e),
 						spline2: matMultiply(transform, castOffCornerSecondary.spline1),
 					}

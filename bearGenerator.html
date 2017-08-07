@@ -2,27 +2,23 @@
 <html>
 <head>
 	<title>Bear Generator</title>
-	<script type = "text/javascript" src = "https://cdnjs.cloudflare.com/ajax/libs/d3/4.9.1/d3.js"></script>
 	<script type = "text/javascript" src = "https://cdnjs.cloudflare.com/ajax/libs/mathjs/3.14.1/math.js"></script>
 	<script type = "text/javascript" src = "https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/1.3.3/FileSaver.min.js"></script>
 </head>
 <body>
 <svg id = "pathFinding" width = 500 height = 500></svg>
 <script type="text/javascript">
-	//var pathFind = d3.select("#pathFinding");
 
 	var width = 300;
 	var sizeX = 13;
 	var sizeY = 9;
-	var legSizeZ = 5;
-	var bodSizeZ = 8;
-	var headSizeZ = 5;
+	var legSizeZ = 3;
+	var armSizeZ = 3;
+	var bodSizeZ = 3;
+	var headSizeZ = 3;
 
-	var totalSizeZ = (legSizeZ * 2) + bodSizeZ + headSizeZ;
-	var legLimit = legSizeZ * 2 + bodSizeZ;
+	var totalSizeZ = legSizeZ + armSizeZ + bodSizeZ + headSizeZ;
 
-	//var padding = (pathFind.attr("width")-width)/2;
-	//var rect = pathFind.append("rect").attr("width", width).attr("height", width).attr("x", padding).attr("y", padding).attr("fill", "AliceBlue");
 	var stack = [];
 	var cubeSize = 1;
 	var legOrder = [
@@ -30,18 +26,18 @@
 		{i:0, j:7, dir: "w", type: "normal"},
 		{i:0, j:6, dir: "w", type: "junction", connection: [1,6]},
 		{i:0, j:5, dir: "w", type: "normal"},
-		{i:0, j:4, dir: "w", type: "junction", connection: [1,4]},
-		{i:0, j:3, dir: "w", type: "normal"},
-		{i:0, j:2, dir: "w", type: "junction", connection: [1,2]},
-		{i:0, j:1, dir: "w", type: "normal", castOff: true},
-		{i:0, j:0, dir: "w", type: "junctionCorner", connection: [1,1], castOff: true},
-		{i:1, j:0, dir: "n", type: "normal", castOff: true},
-		{i:2, j:0, dir: "n", type: "normal", castOff: true},
-		{i:3, j:0, dir: "n", type: "junctionCorner", connection: [2,1], castOff: true},
-		{i:3, j:1, dir: "e", type: "normal", castOff: true},
-		{i:3, j:2, dir: "e", type: "junction", connection: [2,2], castOff: true},
-		{i:3, j:3, dir: "e", type: "normal", castOff: true},
-		{i:3, j:4, dir: "e", type: "junction", connection: [2,4], castOff: true},
+		{i:0, j:4, dir: "w", type: "junction", connection: [1,4], castOff: true, cD1: "right", cD2: "right"},
+		{i:0, j:3, dir: "w", type: "normal", castOff: true, cD1: "right"},
+		{i:0, j:2, dir: "w", type: "junction", connection: [1,2], castOff: true, cD1: "right", cD2: "right"},
+		{i:0, j:1, dir: "w", type: "normal", castOff: true, cD1: "right", cD2: "right"},
+		{i:0, j:0, dir: "w", type: "junctionCorner", connection: [1,1], castOff: true, cD1: "backRight", cD2: "backRight"},
+		{i:1, j:0, dir: "n", type: "normal", castOff: true, cD1: "back"},
+		{i:2, j:0, dir: "n", type: "normal", castOff: true, cD1: "back"},
+		{i:3, j:0, dir: "n", type: "junctionCorner", connection: [2,1], castOff: true, cD1: "backLeft", cD2: "backLeft"},
+		{i:3, j:1, dir: "e", type: "normal", castOff: true, cD1: "left"},
+		{i:3, j:2, dir: "e", type: "junction", connection: [2,2], castOff: true, cD1: "left", cD2: "left"},
+		{i:3, j:3, dir: "e", type: "normal", castOff: true, cD1: "left"},
+		{i:3, j:4, dir: "e", type: "junction", connection: [2,4], castOff: true, cD1: "left", cD2: "left"},
 		{i:3, j:5, dir: "n", type: "junctionCorner", connection: [6,2]},
 		{i:4, j:5, dir: "n", type: "junction", connection: [4,6]},
 		{i:5, j:5, dir: "n", type: "normal"},
@@ -49,18 +45,18 @@
 		{i:7, j:5, dir: "n", type: "normal"},
 		{i:8, j:5, dir: "n", type: "junction", connection: [8,6]},
 		{i:9, j:5, dir: "w", type: "junctionCorner", connection: [10,6]},
-		{i:9, j:4, dir: "w", type: "junction", connection: [10,4], castOff: true},
-		{i:9, j:3, dir: "w", type: "normal", castOff: true},
-		{i:9, j:2, dir: "w", type: "junction", connection: [10,2], castOff: true},
-		{i:9, j:1, dir: "w", type: "normal", castOff: true},
-		{i:9, j:0, dir: "w", type: "junctionCorner", connection: [10,1], castOff: true},
-		{i:10, j:0, dir: "n", type: "normal", castOff: true},
-		{i:11, j:0, dir: "n", type: "normal", castOff: true},
-		{i:12, j:0, dir: "n", type: "junctionCorner", connection: [11,1], castOff: true},
-		{i:12, j:1, dir: "e", type: "normal", castOff: true, castOff: true},
-		{i:12, j:2, dir: "e", type: "junction", connection: [11,2], castOff: true},
-		{i:12, j:3, dir: "e", type: "normal", castOff: true},
-		{i:12, j:4, dir: "e", type: "junction", connection: [11,4], castOff: true},
+		{i:9, j:4, dir: "w", type: "junction", connection: [10,4], castOff: true, cD1: "right", cD2: "right"},
+		{i:9, j:3, dir: "w", type: "normal", castOff: true, cD1: "right"},
+		{i:9, j:2, dir: "w", type: "junction", connection: [10,2], castOff: true, cD1: "right", cD2: "right"},
+		{i:9, j:1, dir: "w", type: "normal", castOff: true, cD1: "right"},
+		{i:9, j:0, dir: "w", type: "junctionCorner", connection: [10,1], castOff: true, cD1: "backRight", cD2: "backRight"},
+		{i:10, j:0, dir: "n", type: "normal", castOff: true, cD1: "back"},
+		{i:11, j:0, dir: "n", type: "normal", castOff: true, cD1: "back"},
+		{i:12, j:0, dir: "n", type: "junctionCorner", connection: [11,1], castOff: true, cD1: "backLeft", cD2: "backLeft"},
+		{i:12, j:1, dir: "e", type: "normal", castOff: true, castOff: true, cD1: "left"},
+		{i:12, j:2, dir: "e", type: "junction", connection: [11,2], castOff: true, cD1: "left", cD2: "left"},
+		{i:12, j:3, dir: "e", type: "normal", castOff: true, cD1: "left"},
+		{i:12, j:4, dir: "e", type: "junction", connection: [11,4], castOff: true, cD1: "left", cD2: "left"},
 		{i:12, j:5, dir: "e", type: "normal"},
 		{i:12, j:6, dir: "e", type: "junction", connection: [11,6]},
 		{i:12, j:7, dir: "e", type: "normal"},
@@ -82,10 +78,106 @@
 		{i:1, j:4, connection: [0,4]},
 		{i:1, j:3, connection: [2,3]},
 		{i:1, j:2, connection: [0,2]},
+		{i:1, j:1, connection: [0,0]},
+		{i:2, j:1, connection: [3,0]},
+		{i:2, j:2, connection: [3,2]},
+		{i:2, j:3, dir: "e", type: "junction", connection: [1,3], castOff: true, cD1: "left", cD2: "left"},
+		{i:2, j:4, connection: [3,4]},
+		{i:2, j:5, connection: [1,5]},
+		{i:2, j:6, connection: [3,5]},
+		{i:3, j:6, connection: [3,7]},
+		{i:4, j:6, connection: [4,5]},
+		{i:5, j:6, dir: "n", type: "junction", connection: [5,7]},
+		{i:6, j:6, connection: [6,5]},
+		{i:7, j:6, dir: "n", type: "junction", connection: [7,7]},
+		{i:8, j:6, connection: [8,5]},
+		{i:9, j:6, connection: [9,7]},
+		{i:10, j:6, connection: [9,5]},
+		{i:10, j:5, connection: [11,5]},
+		{i:10, j:4, connection: [9,4]},
+		{i:10, j:3, dir: "w", type: "junction", connection: [11,3], castOff: true, cD1: "right", cD2: "right"},
+		{i:10, j:2, connection: [9,2]},
+		{i:10, j:1, connection: [9,0]},
+		{i:11, j:1, connection: [12,0]},
+		{i:11, j:2, connection: [12,2]},
+		{i:11, j:3, connection: [10,3]},
+		{i:11, j:4, connection: [12,4]},
+		{i:11, j:5, dir: "e", type: "junction", connection: [10,5]},
+		{i:11, j:6, connection: [12,6]},
+		{i:11, j:7, connection: [12,8]},
+		{i:10, j:7, connection: [10,8]},
+		{i:9, j:7, dir: "s", type: "junction", connection: [9,6]},
+		{i:8, j:7, connection: [8,8]},
+		{i:7, j:7, connection: [7,6]},
+		{i:6, j:7, connection: [6,8]},
+		{i:5, j:7, connection: [5,6]},
+		{i:4, j:7, connection: [4,8]},
+		{i:3, j:7, dir: "s", type: "junction", connection: [3,6]},
+		{i:2, j:7, connection: [2,8]},
+	];
+	var revlegOrder = legOrder.slice(0).reverse();
+
+	var armOrder = [
+		{i:0, j:8, dir: "s", type: "junctionCorner", connection: [1,7], castOff: true, cD1: "backRight", cD2: "backRight"},
+		{i:0, j:7, dir: "w", type: "normal", castOff: true, cD1: "right"},
+		{i:0, j:6, dir: "w", type: "junction", connection: [1,6], castOff: true, cD1: "right", cD2: "right"},
+		{i:0, j:5, dir: "w", type: "normal", castOff: true, cD1: "right"},
+		{i:0, j:4, dir: "w", type: "junction", connection: [1,4], castOff: true, cD1: "right", cD2: "right"},
+		{i:0, j:3, dir: "w", type: "normal", castOff: true, cD1: "right"},
+		{i:0, j:2, dir: "w", type: "junction", connection: [1,2], castOff: true, cD1: "right", cD2: "right"},
+		{i:0, j:1, dir: "w", type: "normal", castOff: true, cD1: "right", cD2: "right"},
+		{i:0, j:0, dir: "w", type: "junctionCorner", connection: [1,1], castOff: true, cD1: "backRight", cD2: "backRight"},
+		{i:1, j:0, dir: "n", type: "normal", castOff: true, cD1: "back"},
+		{i:2, j:0, dir: "n", type: "normal", castOff: true, cD1: "back"},
+		{i:3, j:0, dir: "n", type: "junctionCorner", connection: [2,1], castOff: true, cD1: "backLeft", cD2: "backLeft"},
+		{i:3, j:1, dir: "e", type: "normal", castOff: true, cD1: "left"},
+		{i:3, j:2, dir: "e", type: "junction", connection: [2,2], castOff: true, cD1: "left", cD2: "left"},
+		{i:3, j:3, dir: "e", type: "normal", castOff: true, cD1: "left"},
+		{i:3, j:4, dir: "e", type: "junction", connection: [2,4], castOff: true, cD1: "left", cD2: "left"},
+		{i:3, j:5, dir: "n", type: "junctionCorner", connection: [6,2], cD1: "frontLeft", cD2: "frontLeft"},
+		{i:4, j:5, dir: "n", type: "junction", connection: [4,6]},
+		{i:5, j:5, dir: "n", type: "normal"},
+		{i:6, j:5, dir: "n", type: "junction", connection: [6,6]},
+		{i:7, j:5, dir: "n", type: "normal"},
+		{i:8, j:5, dir: "n", type: "junction", connection: [8,6]},
+		{i:9, j:5, dir: "w", type: "junctionCorner", connection: [10,6], castOff: true, cD1: "frontRight", cD2: "frontRight"},
+		{i:9, j:4, dir: "w", type: "junction", connection: [10,4], castOff: true, cD1: "right", cD2: "right"},
+		{i:9, j:3, dir: "w", type: "normal", castOff: true, cD1: "right"},
+		{i:9, j:2, dir: "w", type: "junction", connection: [10,2], castOff: true, cD1: "right", cD2: "right"},
+		{i:9, j:1, dir: "w", type: "normal", castOff: true, cD1: "right"},
+		{i:9, j:0, dir: "w", type: "junctionCorner", connection: [10,1], castOff: true, cD1: "backRight", cD2: "backRight"},
+		{i:10, j:0, dir: "n", type: "normal", castOff: true, cD1: "back"},
+		{i:11, j:0, dir: "n", type: "normal", castOff: true, cD1: "back"},
+		{i:12, j:0, dir: "n", type: "junctionCorner", connection: [11,1], castOff: true, cD1: "backLeft", cD2: "backLeft"},
+		{i:12, j:1, dir: "e", type: "normal", castOff: true, castOff: true, cD1: "left"},
+		{i:12, j:2, dir: "e", type: "junction", connection: [11,2], castOff: true, cD1: "left", cD2: "left"},
+		{i:12, j:3, dir: "e", type: "normal", castOff: true, cD1: "left"},
+		{i:12, j:4, dir: "e", type: "junction", connection: [11,4], castOff: true, cD1: "left", cD2: "left"},
+		{i:12, j:5, dir: "e", type: "normal", castOff: true, cD1: "left"},
+		{i:12, j:6, dir: "e", type: "junction", connection: [11,6], castOff: true, cD1: "left", cD2: "left"},
+		{i:12, j:7, dir: "e", type: "normal", castOff: true, cD1: "left"},
+		{i:12, j:8, dir: "e", type: "junctionCorner", connection: [11,7], castOff: true, cD1: "backLeft", cD2: "backLeft"},
+		{i:11, j:8, dir: "s", type: "normal", castOff: true, cD1: "left"},
+		{i:10, j:8, dir: "s", type: "junction", connection: [10,7], castOff: true, cD1: "left", cD2: "left"},
+		{i:9, j:8, dir: "s", type: "normal", castOff: true, cD1: "left"},
+		{i:8, j:8, dir: "s", type: "junction", connection: [8,7]},
+		{i:7, j:8, dir: "s", type: "normal"},
+		{i:6, j:8, dir: "s", type: "junction", connection: [6,7]},
+		{i:5, j:8, dir: "s", type: "normal"},
+		{i:4, j:8, dir: "s", type: "junction", connection: [4,7]},
+		{i:3, j:8, dir: "s", type: "normal", castOff: true, cD1: "right"},
+		{i:2, j:8, dir: "s", type: "junction", connection: [2,7], castOff: true, cD1: "right", cD2: "right"},
+		{i:1, j:8, dir: "s", type: "normalCorner", castOff: true, cD1: "right"},
+		{i:1, j:7, connection: [0,8]},
+		{i:1, j:6, connection: [0,6]},
+		{i:1, j:5, dir: "w", type: "junction", connection: [2,5]},
+		{i:1, j:4, connection: [0,4]},
+		{i:1, j:3, connection: [2,3]},
+		{i:1, j:2, connection: [0,2]},
 		{i:1, j:1, connection: [0,0], castOff: true},
 		{i:2, j:1, connection: [3,0], castOff: true},
 		{i:2, j:2, connection: [3,2], castOff: true},
-		{i:2, j:3, dir: "e", type: "junction", connection: [1,3], castOff: true},
+		{i:2, j:3, dir: "e", type: "junction", connection: [1,3], castOff: true, cD1: "left", cD2: "left"},
 		{i:2, j:4, connection: [3,4], castOff: true},
 		{i:2, j:5, connection: [1,5]},
 		{i:2, j:6, connection: [3,5]},
@@ -99,7 +191,7 @@
 		{i:10, j:6, connection: [9,5]},
 		{i:10, j:5, connection: [11,5]},
 		{i:10, j:4, connection: [9,4]},
-		{i:10, j:3, dir: "w", type: "junction", connection: [11,3], castOff: true},
+		{i:10, j:3, dir: "w", type: "junction", connection: [11,3], castOff: true, cD1: "right", cD2: "right"},
 		{i:10, j:2, connection: [9,2], castOff: true},
 		{i:10, j:1, connection: [9,0], castOff: true},
 		{i:11, j:1, connection: [12,0], castOff: true},
@@ -119,7 +211,7 @@
 		{i:3, j:7, dir: "s", type: "junction", connection: [3,6]},
 		{i:2, j:7, connection: [2,8]},
 	];
-	var revlegOrder = legOrder.slice(0).reverse();
+	var revarmOrder = legOrder.slice(0).reverse();
 
 	var bodOrder = [
 		{i:0, j:8, dir: "s", type: "junctionCorner", connection: [1,7]},
@@ -178,27 +270,27 @@
 	var revbodOrder = bodOrder.slice(0).reverse();
 
 	var headOrder = [
-		{i:4, j:8, dir: "s", type: "junctionCorner", connection: [5,7], castOff: true},
-		{i:4, j:7, dir: "w", type: "normal", castOff: true},
-		{i:4, j:6, dir: "w", type: "normal", castOff: true},
-		{i:4, j:5, dir: "w", type: "junctionCorner", connection: [5,6], castOff: true},
-		{i:5, j:5, dir: "n", type: "normal", castOff: true},
-		{i:6, j:5, dir: "n", type: "junction", connection: [6,6], castOff: true},
-		{i:7, j:5, dir: "n", type: "normal", castOff: true},
-		{i:8, j:5, dir: "n", type: "junctionCorner", connection: [7,6], castOff: true},
-		{i:8, j:6, dir: "e", type: "normal", castOff: true},
-		{i:8, j:7, dir: "e", type: "normal", castOff: true},
-		{i:8, j:8, dir: "e", type: "junctionCorner", connection: [7,7], castOff: true},
-		{i:7, j:8, dir: "s", type: "normal", castOff: true},
-		{i:6, j:8, dir: "s", type: "junction", connection: [6,7], castOff: true},
-		{i:5, j:8, dir: "s", type: "normalCorner", castOff: true},
+		{i:4, j:8, dir: "s", type: "junctionCorner", connection: [5,7], castOff: true, cD1: "backLeft", cD2: "backLeft"},
+		{i:4, j:7, dir: "w", type: "normal", castOff: true, cD1: "left"},
+		{i:4, j:6, dir: "w", type: "normal", castOff: true, cD1: "left"},
+		{i:4, j:5, dir: "w", type: "junctionCorner", connection: [5,6], castOff: true, cD1: "backLeft", cD2: "backLeft"},
+		{i:5, j:5, dir: "n", type: "normal", castOff: true, cD1: "left"},
+		{i:6, j:5, dir: "n", type: "junction", connection: [6,6], castOff: true, cD1: "left", cD2: "left"},
+		{i:7, j:5, dir: "n", type: "normal", castOff: true, cD1: "left"},
+		{i:8, j:5, dir: "n", type: "junctionCorner", connection: [7,6], castOff: true, cD1: "backLeft", cD2: "backLeft"},
+		{i:8, j:6, dir: "e", type: "normal", castOff: true, cD1: "left"},
+		{i:8, j:7, dir: "e", type: "normal", castOff: true, cD1: "left"},
+		{i:8, j:8, dir: "e", type: "junctionCorner", connection: [7,7], castOff: true, cD1: "backLeft", cD2: "backLeft"},
+		{i:7, j:8, dir: "s", type: "normal", castOff: true, cD1: "left"},
+		{i:6, j:8, dir: "s", type: "junction", connection: [6,7], castOff: true, cD1: "left", cD2: "left"},
+		{i:5, j:8, dir: "s", type: "normalCorner", castOff: true, cD1: "left"},
 		{i:5, j:7, connection: [4,8]},
 		{i:5, j:6, connection: [4,5]},
 		{i:6, j:6, connection: [6,5]},
 		{i:7, j:6, connection: [8,5]},
 		{i:7, j:7, connection: [8,8]},
 		{i:6, j:7, connection: [6,8]}
-	]
+	];
 	var revheadOrder = headOrder.slice(0).reverse();
 
 	var regularLoop = {
@@ -358,8 +450,7 @@
 			[-0.35, 0, -0.5],
 		]
 	}
-
-	var castOffRightSecondary = {
+	var castOffRightSecondaryLoop = {
 		spline1: [
 			[-0.5, 0.15, -0.25],
 			[-0.1, 0.45, -0.25],
@@ -373,8 +464,90 @@
 			[0.5, 0.15, -0.25]
 		]
 	}
+	var castOffRightBackLoop = {
+		spline1: [
+			[-0.35, 1, -0.5],
+			[0, 1.1, -0.15],
+			[1, 1.6, 0],
+			[1.6, 1.4, -0.25],
+			[1.8, 1, -0.35],
+			[1.6, 0.6, -0.25],
+			[1, 0.4, 0],
+			[0.3, 1.2, -0.25],
+			[0.35, 1, -0.5],
+		]
+	}
 
-	var castOffCornerMain = {
+	var castOffBackMainLoop = {
+		spline1: [
+			[0.35, 0, -0.5],
+			[0.1, 0.35, -0.25],
+			[0.45, 0.95, -0.15],
+			[0.35, 1.75, -0.3],
+			[0, 1.7, -0.4,],
+			[-0.35, 1.75, -0.3],
+			[-0.45, 0.95, -0.15],
+			[-0.1, 0.35, -0.25],
+			[-0.35, 0, -0.5],
+		]
+	}
+	var castOffBackBackLoop = {
+		spline1: [
+			[-0.35, 1, -0.5],
+			[-0.1, 1.35, -0.25],
+			[-0.45, 1.95, -0.15],
+			[-0.35, 2.75, -0.3],
+			[0, 2.7, -0.4,],
+			[0.35, 2.75, -0.3],
+			[0.45, 1.95, -0.15],
+			[0.1, 1.35, -0.25],
+			[0.35, 1, -0.5],
+		]
+	}
+
+	var castOffLeftMainLoop = {
+		spline1: [
+			[0.35, 0, -0.5],
+			[0, 0.1, -0.15],
+			[-1, 0.6, 0],
+			[-1.6, 0.4, -0.25],
+			[-1.8, 0, -0.35],
+			[-1.6, -0.4, -0.25],
+			[-1, -0.6, 0],
+			[-0.3, 0.2, -0.25],
+			[-0.35, 0, -0.5],
+		]
+	}
+	var castOffLeftSecondaryLoop = {
+		spline1: [
+			[-0.5, 0.15, -0.25],
+			[-0.1, 0.45, -0.25],
+			[-0.15, 0.4, -0.125],
+			[-1, 0.85, 0.125],
+			[-1.6, 0.7, -0.125],
+			[-1.8, 0, -0.225],
+			[-1.6, -0.4, -0.125],
+			[-1, -0.6, 0.125],
+			[-0.25, -0.3, -0.125],
+			[0.1, 0.2, -0.25],
+			[0.5, 0.15, -0.25],
+		]
+	}
+	var castOffLeftBackLoop = {
+		spline1: [
+			[-0.35, 1, -0.5],
+			[-0.3, 1.2, -0.25],
+			[-1, 0.4, 0],
+			[-1.6, 0.6, -0.25],
+			[-1.8, 1, -0.35],
+			[-1.6, 1.4, -0.25],
+			[-1, 1.6, 0],
+			[0, 1.1, -0.15],
+			[0.35, 1, -0.5],
+		]
+	}
+
+	var castOffCornerBackRightMainLoop = {
 		spline1: [
 			[0.247, 0.247, -0.5],
 			[0.3, 0.3, -0.25],
@@ -385,8 +558,7 @@
 			[-0.247, -0.247, -0.5],
 		]
 	}
-
-	var castOffCornerSecondary = {
+	var castOffCornerBackRightSecondaryLoop = {
 		spline1: [
 			[-0.5, 0, -0.25],
 			[-0.318, 0.177, -0.25],
@@ -398,6 +570,119 @@
 			[0, 0.5, -0.25],
 		]
 	}
+	var castOffCornerBackRightBackLoop = {
+		spline1: [
+			[-1.247, 0.753, -0.5],
+			[-0.9, 1.3, -0.25],
+			[-1.4, 2, -0.12],
+			[-1, 2.7, -0.35],
+			[-0.5, 2, -0.12],
+			[-0.7, 1.3, -0.25],
+			[-0.753, 1.247, -0.5],
+		]
+	}
+
+	var castOffCornerBackLeftMainLoop = {
+		spline1: [
+			[0.247, 0.247, -0.5],
+			[-0.3, -0.1, -0.25],
+			[-1, 0.5, -0.12],
+			[-1.7, 0, -0.35],
+			[-1, -0.4, -0.12],
+			[-0.3, -0.3, -0.25],
+			[-0.247, -0.247, -0.5],
+		]
+	}
+	var castOffCornerBackLeftSecondaryLoop = {
+		spline1: [
+			[-0.5, 0, -0.25],
+			[-0.318, 0.177, -0.25],
+			[-1, 0.4, 0],
+			[-1.7, 0, -0.2],
+			[-1, -0.5, 0],
+			[-0.035, 0.177, -0.25],
+			[0, 0.5, -0.25],
+		]
+	}
+	var castOffCornerBackLeftBackLoop = {
+		spline1: [
+			[-1.247, 0.753, -0.5],
+			[-1.3, 0.7, -0.25],
+			[-2, 0.5, -0.12],
+			[-2.7, 1, -0.35],
+			[-2, 1.4, -0.12],
+			[-1.3, 0.9, -0.25],
+			[-0.753, 1.247, -0.5],
+		]
+	}
+
+	var castOffCornerFrontRightMainLoop = {
+		spline1: [
+			[0.247, 0.247, -0.5],
+			[0.3, 0.3, -0.25],
+			[1, 0.5, -0.12],
+			[1.7, 0, -0.35],
+			[1, -0.5, -0.12],
+			[0.3, 0.1, -0.25],
+			[-0.247, -0.247, -0.5],
+		]
+	}
+	var castOffCornerFrontRightSecondaryLoop = {
+		spline1: [
+			[-0.5, 0, -0.25],
+			[-0.318, 0.177, -0.25],
+			[1, 0.5, 0],
+			[1.7, 0, -0.2],
+			[1, -0.5, 0],
+			[-0.035, 0.177, -0.25],
+			[0, 0.5, -0.25],
+		]
+	}
+	var castOffCornerFrontRightBackLoop = {
+		spline1: [
+			[-1.247, 0.753, -0.5],
+			[-0.7, 1.1, -0.25],
+			[0, 0.5, -0.12],
+			[0.7, 1, -0.35],
+			[0, 1.5, -0.12],
+			[-0.7, 1.3, -0.25],
+			[-0.753, 1.247, -0.5],
+		]
+	}
+
+	var castOffCornerFrontLeftMainLoop = {
+		spline1: [
+			[0.247, 0.247, -0.5],
+			[-0.1, -0.3, -0.25],
+			[0.5, -1, -0.12],
+			[0, -1.7, -0.35],
+			[-0.5, -1, -0.12],
+			[-0.3, -0.3, -0.25],
+			[-0.247, -0.247, -0.5],
+		]
+	}
+	var castOffCornerFrontLeftSecondaryLoop = {
+		spline1: [
+			[-0.5, 0, -0.25],
+			[-0.318, 0.177, -0.25],
+			[-0.5, -1, 0],
+			[0, -1.7, -0.2],
+			[0.5, -1, 0],
+			[-0.035, 0.177, -0.25],
+			[0, 0.5, -0.25],
+		]
+	}
+	var castOffCornerFrontLeftBackLoop = {
+		spline1: [
+			[-1.247, 0.753, -0.5],
+			[-1.3, 0.7, -0.25],
+			[-1.5, 0, -0.12],
+			[-1, -0.7, -0.35],
+			[-0.5, 0, -0.12],
+			[-1.1, 0.7, -0.25],
+			[-0.753, 1.247, -0.5],
+		]
+	}
 
 	//stack[z][x][y]
 
@@ -406,7 +691,7 @@
 	var sliceOrder = [];
 
 	for(var k = 0; k < totalSizeZ; k++){
-		if(k < legSizeZ || (k < (legSizeZ + 2 * bodSizeZ) && k >= bodSizeZ)){
+		if(k < legSizeZ){
 			if(k%2 == 0){
 				sliceOrder.push(legOrder);
 				console.log(k + ": Forward Leg");
@@ -414,6 +699,16 @@
 			else{
 				sliceOrder.push(revlegOrder);
 				console.log(k + ": Reverse Leg");
+			}
+		}
+		else if (k >= (legSizeZ + bodSizeZ) && k < (legSizeZ + bodSizeZ + armSizeZ)){
+			if(k%2 == 0){
+				sliceOrder.push(armOrder);
+				console.log(k + ": Forward Arm");
+			}	
+			else{
+				sliceOrder.push(revarmOrder);
+				console.log(k + ": Reverse Arm");
 			}
 		}
 		else if(k >= legSizeZ && k < (legSizeZ + bodSizeZ)){
@@ -464,6 +759,15 @@
 
 	for(var k = 0; k < totalSizeZ; k++){
 		var thisSlice = sliceOrder[k];
+		var isCastOffLayer;
+
+		if(k == legSizeZ - 1 || k == totalSizeZ - headSizeZ - 1|| k == totalSizeZ - 1){
+			isCastOffLayer = true;
+		}
+		else{
+			isCastOffLayer = false;
+		}
+
 		for(var a = 0; a < thisSlice.length; a++){
 			var thisNode;
 			var thisDir;
@@ -471,18 +775,6 @@
 			var cTransform;
 			var i = thisSlice[a].i;
 			var j = thisSlice[a].j;
-
-			var cI;
-			var cJ;
-
-			if(thisSlice[a].connection != null){
-				cI = thisSlice[a].connection[0];
-				cJ = thisSlice[a].connection[1];
-			}
-			else{
-				cI = 0;
-				cJ = 0;
-			}
 
 			thisDir = thisSlice[a].dir;
 
@@ -495,26 +787,12 @@
 					[0, 0, 1, k],
 					[0, 0, 0, 1]
 				]);
-				cTransform = math.matrix([
-					//0 degree rotation
-					[1, 0, 0, cI],
-					[0, 1, 0, cJ],
-					[0, 0, 1, k],
-					[0, 0, 0, 1]
-				]);
 			}
 			else if(thisDir == "e"){
 				transform = math.matrix([
 					//90 degree rotation
 					[0, -1, 0, i],
 					[1, 0, 0, j],
-					[0, 0, 1, k],
-					[0, 0, 0, 1]
-				]);
-				cTransform = math.matrix([
-					//90 degree rotation
-					[0, -1, 0, cI],
-					[1, 0, 0, cJ],
 					[0, 0, 1, k],
 					[0, 0, 0, 1]
 				]);
@@ -527,26 +805,12 @@
 					[0, 0, 1, k],
 					[0, 0, 0, 1]
 				]);
-				cTransform = math.matrix([
-					//270 degree rotation
-					[0, 1, 0, cI],
-					[-1, 0, 0, cJ],
-					[0, 0, 1, k],
-					[0, 0, 0, 1]
-				]);
 			}
 			else if(thisDir == "s"){
 				transform = math.matrix([
 					//180 degree rotation
 					[-1, 0, 0, i],
 					[0, -1, 0, j],
-					[0, 0, 1, k],
-					[0, 0, 0, 1]
-				]);
-				cTransform = math.matrix([
-					//180 degree rotation
-					[-1, 0, 0, cI],
-					[0, -1, 0, cJ],
 					[0, 0, 1, k],
 					[0, 0, 0, 1]
 				]);
@@ -563,77 +827,8 @@
 
 			stack[k][i][j].transform = transform;
 
-			if(thisSlice[a].type != null && (thisSlice[a].castOff == null || k != legSizeZ-1 || k != (2*legSizeZ+bodSizeZ-1) || k != totalSizeZ-1)){
-				if(thisSlice[a].type == "normal"){
-					stack[k][i][j].splines = {
-						spline1a: matMultiply(transform, regularLoop.spline1a),
-						spline1b: matMultiply(transform, regularLoop.spline1b),
-						spline1c: matMultiply(transform, regularLoop.spline1c),
-					};
-				}
-				else if(thisSlice[a].type == "normalCorner"){
-					stack[k][i][j].splines = {
-						spline1a: matMultiply(transform, regularCornerLoop.spline1a),
-						spline1b: matMultiply(transform, regularCornerLoop.spline1b),
-						spline1c: matMultiply(transform, regularCornerLoop.spline1c)
-					};
-				}
-				else if(thisSlice[a].type == "junction"){
-					stack[k][i][j].splines = {
-						spline1a: matMultiply(transform, junctionLoop.spline1a),
-						spline1b: matMultiply(transform, junctionLoop.spline1b),
-						spline1c: matMultiply(transform, junctionLoop.spline1c),
-						spline1d: matMultiply(transform, junctionLoop.spline1d),
-						spline1e: matMultiply(transform, junctionLoop.spline1e),
-						spline2: matMultiply(transform, junctionLoop.spline2),
-					}
-				}
-				else if(thisSlice[a].type == "junctionCorner"){
-					stack[k][i][j].splines = {
-						spline1a: matMultiply(transform, junctionCornerLoop.spline1a),
-						spline1b: matMultiply(transform, junctionCornerLoop.spline1b),
-						spline1c: matMultiply(transform, junctionCornerLoop.spline1c),
-						spline1d: matMultiply(transform, junctionCornerLoop.spline1d),
-						spline1e: matMultiply(transform, junctionCornerLoop.spline1e),
-						spline2: matMultiply(transform, junctionCornerLoop.spline2),
-					}
-				}
-			}
-			else if(thisSlice[a].type != null && (k == legSizeZ-1 || k == (2*legSizeZ+bodSizeZ-1) || k == totalSizeZ-1) && thisSlice[a].castOff){
-				if(thisSlice[a].type == "normal"){
-					stack[k][i][j].splines = {
-						spline1a: matMultiply(transform, regularLoop.spline1a),
-						spline1b: matMultiply(transform, castOffRightMain.spline1),
-						spline1c: matMultiply(transform, regularLoop.spline1c),
-					};
-				}
-				else if(thisSlice[a].type == "normalCorner"){
-					stack[k][i][j].splines = {
-						spline1a: matMultiply(transform, regularCornerLoop.spline1a),
-						spline1b: matMultiply(transform, castOffCornerMain.spline1),
-						spline1c: matMultiply(transform, regularCornerLoop.spline1c)
-					};
-				}
-				else if(thisSlice[a].type == "junction"){
-					stack[k][i][j].splines = {
-						spline1a: matMultiply(transform, junctionLoop.spline1a),
-						spline1b: matMultiply(transform, castOffRightMain.spline1),
-						spline1c: matMultiply(transform, junctionLoop.spline1c),
-						spline1d: matMultiply(cTransform, castOffRightMain.spline1.slice(0).reverse()),
-						spline1e: matMultiply(transform, junctionLoop.spline1e),
-						spline2: matMultiply(transform, castOffRightSecondary.spline1),
-					}
-				}
-				else if(thisSlice[a].type == "junctionCorner"){
-					stack[k][i][j].splines = {
-						spline1a: matMultiply(transform, junctionCornerLoop.spline1a),
-						spline1b: matMultiply(transform, castOffCornerMain.spline1),
-						spline1c: matMultiply(transform, junctionCornerLoop.spline1c),
-						spline1d: matMultiply(cTransform, castOffCornerMain.spline1.slice(0).reverse()),
-						spline1e: matMultiply(transform, junctionCornerLoop.spline1e),
-						spline2: matMultiply(transform, castOffCornerSecondary.spline1),
-					}
-				}
+			if(thisSlice[a].type != null){
+				addLoops(thisSlice[a], transform, isCastOffLayer, i, j, k);
 			}
 			else if (thisSlice[a].connection != null){
 				stack[k][i][j].connection = [thisSlice[a].connection[0], thisSlice[a].connection[1], k];
@@ -658,10 +853,13 @@
 		var o;
 		if(z % 2 == 0){
 			o = sliceOrder[z];
+			console.log(o);
 			//right to left (for even)
 			for(var i = 0; i < o.length; i++){
 				var thisSpline = stack[z][o[i].i][o[i].j];
 				if(o[i].type != null){
+					console.log(o[i].i + "," + o[i].j + "," + z);
+					console.log(thisSpline);
 					if(o[i].type == "normal" || o[i].type == "normalCorner"){
 						travelSplineForward(thisSpline.splines.spline1a, splinePath, points);
 						travelSplineForward(thisSpline.splines.spline1b, splinePath, points);
@@ -675,7 +873,9 @@
 					}
 				}
 				else if(o[i].connection != null){
+					console.log(o[i].i + "," + o[i].j + "," + z);
 					var connect = stack[z][o[i].connection[0]][o[i].connection[1]];
+					console.log(connect);
 					travelSplineForward(connect.splines.spline1a, splinePath, points);
 					travelSplineForward(connect.splines.spline1b, splinePath, points);
 					travelSplineForward(connect.splines.spline1c, splinePath, points);
@@ -777,7 +977,7 @@
 	}
 	bcc.push(curve1);
 	var blob = new Blob(bcc);
-	saveAs(blob, "bear.bcc");
+	saveAs(blob, "bear2.bcc");
 
 	function travelSplineForward(spline, pathArr, pointArr) {
 		for(var a = 0; a < spline.length; a++){
@@ -810,6 +1010,141 @@
 			resultingArray.push(result._data);
 		}
 		return resultingArray;
+	}
+
+	function addLoops(loopObj, transformM, isCastOff, i, j, k){
+		//determine if castOff needs to be applied
+		if(isCastOff && loopObj.castOff){
+			if(loopObj.type == "normal"){
+				stack[k][i][j].splines = {
+					spline1a: matMultiply(transformM, regularLoop.spline1a),
+					spline1c: matMultiply(transformM, regularLoop.spline1c),
+				};
+				if(loopObj.cD1 == "right"){
+					stack[k][i][j].splines.spline1b = matMultiply(transformM, castOffRightMain.spline1);
+				}
+				else if(loopObj.cD1 == "left"){
+					stack[k][i][j].splines.spline1b = matMultiply(transformM, castOffLeftMainLoop.spline1);
+				}
+				else{
+					stack[k][i][j].splines.spline1b = matMultiply(transformM, castOffBackMainLoop.spline1);
+				}
+				console.log(stack[k][i][j].splines.spline1b);
+			}
+			else if(loopObj.type == "normalCorner"){
+				stack[k][i][j].splines = {
+					spline1a: matMultiply(transformM, regularCornerLoop.spline1a),
+					spline1c: matMultiply(transformM, regularCornerLoop.spline1c),
+				};
+				if(loopObj.cD1 == "right"){
+					stack[k][i][j].splines.spline1b = matMultiply(transformM, castOffCornerBackRightMainLoop.spline1);
+				}
+				else if(loopObj.cD1 == "left"){
+					stack[k][i][j].splines.spline1b = matMultiply(transformM, castOffCornerBackLeftMainLoop.spline1);
+				}
+			}
+			else if(loopObj.type == "junction"){
+				stack[k][i][j].splines = {
+					spline1a: matMultiply(transformM, junctionLoop.spline1a),
+					spline1c: matMultiply(transformM, junctionLoop.spline1c),
+					spline1e: matMultiply(transformM, junctionLoop.spline1e),
+				}
+				if(loopObj.cD1 == "right"){
+					stack[k][i][j].splines.spline1b = matMultiply(transformM, castOffRightMain.spline1);
+					stack[k][i][j].splines.spline2 = matMultiply(transformM, castOffRightSecondaryLoop.spline1);
+				}
+				else if(loopObj.cD1 == "left"){
+					stack[k][i][j].splines.spline1b = matMultiply(transformM, castOffLeftMainLoop.spline1);
+					stack[k][i][j].splines.spline2 = matMultiply(transformM, castOffLeftSecondaryLoop.spline1);
+				}
+				else if(loopObj.cD1 == "back"){
+					stack[k][i][j].splines.spline1b = matMultiply(transformM, castOffBackMainLoop.spline1);
+					stack[k][i][j].splines.spline2 = matMultiply(transformM, castOffBackBackLoop.spline1);
+				}
+				if(loopObj.cD2 == "right"){
+					stack[k][i][j].splines.spline1d = matMultiply(transformM, castOffRightBackLoop.spline1);
+				}
+				else if(loopObj.cD2 == "left"){
+					stack[k][i][j].splines.spline1d = matMultiply(transformM, castOffLeftBackLoop.spline1);
+				}
+				else if(loopObj.cD2 == "back"){
+					stack[k][i][j].splines.spline1d = matMultiply(transformM, castOffBackBackLoop.spline1);
+				}
+			}
+			else if(loopObj.type == "junctionCorner"){
+				stack[k][i][j].splines = {
+					spline1a: matMultiply(transformM, junctionCornerLoop.spline1a),
+					spline1c: matMultiply(transformM, junctionCornerLoop.spline1c),
+					spline1e: matMultiply(transformM, junctionCornerLoop.spline1e),
+					spline2: matMultiply(transformM, junctionCornerLoop.spline2)
+				}
+				if(loopObj.cD1 == "backRight"){
+					stack[k][i][j].splines.spline1b = matMultiply(transformM, castOffCornerBackRightMainLoop.spline1);
+					stack[k][i][j].splines.spline2 = matMultiply(transformM, castOffCornerBackRightSecondaryLoop.spline1);
+				}
+				else if(loopObj.cD1 == "backLeft"){
+					stack[k][i][j].splines.spline1b = matMultiply(transformM, castOffCornerBackLeftMainLoop.spline1);
+					stack[k][i][j].splines.spline2 = matMultiply(transformM, castOffCornerBackLeftSecondaryLoop.spline1);
+				}
+				else if(loopObj.cD1 == "frontRight"){
+					stack[k][i][j].splines.spline1b = matMultiply(transformM, castOffCornerFrontRightMainLoop.spline1);
+					stack[k][i][j].splines.spline2 = matMultiply(transformM, castOffCornerFrontRightSecondaryLoop.spline1);
+				}
+				else if(loopObj.cD1 == "frontLeft"){
+					stack[k][i][j].splines.spline1b = matMultiply(transformM, castOffCornerFrontLeftMainLoop.spline1);
+					stack[k][i][j].splines.spline2 = matMultiply(transformM, castOffCornerFrontLeftSecondaryLoop.spline1);
+				}
+
+				if(loopObj.cD2 == "backRight"){
+					stack[k][i][j].splines.spline1d = matMultiply(transformM, castOffCornerBackRightBackLoop.spline1);
+				}
+				else if(loopObj.cD2 == "backLeft"){
+					stack[k][i][j].splines.spline1d = matMultiply(transformM, castOffCornerBackLeftBackLoop.spline1);
+				}
+				else if(loopObj.cD1 == "frontRight"){
+					stack[k][i][j].splines.spline1d = matMultiply(transformM, castOffCornerFrontRightBackLoop.spline1);
+				}
+				else if(loopObj.cD1 == "frontLeft"){
+					stack[k][i][j].splines.spline1d = matMultiply(transformM, castOffCornerFrontLeftBackLoop.spline1);
+				}
+			}
+		}
+		else{
+			if(loopObj.type == "normal"){
+				stack[k][i][j].splines = {
+					spline1a: matMultiply(transformM, regularLoop.spline1a),
+					spline1b: matMultiply(transformM, regularLoop.spline1b),
+					spline1c: matMultiply(transformM, regularLoop.spline1c),
+				};
+			}
+			else if(loopObj.type == "normalCorner"){
+				stack[k][i][j].splines = {
+					spline1a: matMultiply(transformM, regularCornerLoop.spline1a),
+					spline1b: matMultiply(transformM, regularCornerLoop.spline1b),
+					spline1c: matMultiply(transformM, regularCornerLoop.spline1c),
+				};
+			}
+			else if(loopObj.type == "junction"){
+				stack[k][i][j].splines = {
+					spline1a: matMultiply(transformM, junctionLoop.spline1a),
+					spline1b: matMultiply(transformM, junctionLoop.spline1b),
+					spline1c: matMultiply(transformM, junctionLoop.spline1c),
+					spline1d: matMultiply(transformM, junctionLoop.spline1d),
+					spline1e: matMultiply(transformM, junctionLoop.spline1e),
+					spline2: matMultiply(transformM, junctionLoop.spline2),
+				}
+			}
+			else if(loopObj.type == "junctionCorner"){
+				stack[k][i][j].splines = {
+					spline1a: matMultiply(transformM, junctionCornerLoop.spline1a),
+					spline1b: matMultiply(transformM, junctionCornerLoop.spline1b),
+					spline1c: matMultiply(transformM, junctionCornerLoop.spline1c),
+					spline1d: matMultiply(transformM, junctionCornerLoop.spline1d),
+					spline1e: matMultiply(transformM, junctionCornerLoop.spline1e),
+					spline2: matMultiply(transformM, junctionCornerLoop.spline2),
+				}
+			}
+		}
 	}
 
 	//source: https://stackoverflow.com/questions/7376598/in-javascript-how-do-i-check-if-an-array-has-duplicate-values
